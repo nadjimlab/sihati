@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { HealthEntity, HealthEntityType, ActiveTab } from '../types';
 import { COMMUNES, SPECIALTIES } from '../data/mockData';
 import { 
@@ -39,8 +39,18 @@ import {
   ArrowRight,
   Database,
   LocateFixed,
-  AlertCircle
+  AlertCircle,
+  Cloud,
+  CloudCheck,
+  CloudUpload
 } from 'lucide-react';
+import { 
+  syncInitialDataToFirestore, 
+  loginWithGoogle, 
+  logoutUser, 
+  subscribeToAuth 
+} from '../services/firebaseService';
+import { User } from 'firebase/auth';
 
 interface AdminDashboardProps {
   entities: HealthEntity[];
@@ -80,12 +90,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onViewOnMap,
 }) => {
   // Authentication State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem(ADMIN_SESSION_AUTH_KEY) === 'true';
   });
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSyncingToCloud, setIsSyncingToCloud] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeToAuth((user) => {
+      setCurrentUser(user);
+      if (user) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem(ADMIN_SESSION_AUTH_KEY, 'true');
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const user = await loginWithGoogle();
+      if (user) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem(ADMIN_SESSION_AUTH_KEY, 'true');
+        showToast(`مرحباً بك يا ${user.displayName || user.email}!`, 'success');
+      }
+    } catch (err: any) {
+      showToast('فشل تسجيل الدخول عبر Google: ' + (err?.message || ''), 'error');
+    }
+  };
+
+  const handleSyncToFirebase = async () => {
+    setIsSyncingToCloud(true);
+    try {
+      const count = await syncInitialDataToFirestore(entities);
+      showToast(`تمت مزامنة وحفظ ${count} منشأة طبية في سحابة Firebase بنجاح!`, 'success');
+    } catch (err: any) {
+      showToast('فشلت المزامنة مع سحابة Firebase: ' + (err?.message || ''), 'error');
+    } finally {
+      setIsSyncingToCloud(false);
+    }
+  };
 
   // Admin Active Sub-Tab
   const [subTab, setSubTab] = useState<AdminSubTab>('overview');
@@ -539,9 +587,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
             >
               <KeyRound className="w-4 h-4" />
-              <span>دخول لوحة التحكم</span>
+              <span>دخول لوحة التحكم بالرمز السري</span>
             </button>
           </form>
+
+          {/* Google Sign In Divider */}
+          <div className="relative flex items-center justify-center">
+            <div className="border-t border-slate-200 w-full"></div>
+            <span className="bg-white px-3 text-[11px] font-bold text-slate-400">أو</span>
+          </div>
+
+          {/* Google Sign In Button */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs border border-slate-300 shadow-xs transition-all flex items-center justify-center gap-2.5 active:scale-[0.99]"
+          >
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>تسجيل الدخول باستخدام حساب Google</span>
+          </button>
 
           {/* Return Back Button */}
           <div className="pt-2 text-center border-t border-slate-100">
@@ -1212,6 +1281,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* ----------------------------------------------------------------- */}
       {subTab === 'backup' && (
         <div className="space-y-6 animate-in fade-in duration-200">
+          
+          {/* Firebase Cloud Firestore Real-time Sync Card */}
+          <div className="bg-gradient-to-r from-amber-900/90 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 border border-amber-500/30 shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400">
+                  <Cloud className="w-7 h-7" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-base text-white">سحابة Firebase Firestore السحابية</h3>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <CloudCheck className="w-3 h-3" />
+                      <span>متصل ومفعل</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    مشروع: <code className="text-amber-300 font-mono">tokyo-quest-47c1c</code> • منطقة الخادم: <code className="text-amber-300 font-mono">europe-west1</code>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                id="admin-sync-firebase-btn"
+                onClick={handleSyncToFirebase}
+                disabled={isSyncingToCloud}
+                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all disabled:opacity-50"
+              >
+                {isSyncingToCloud ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>جارٍ المزامنة السحابية...</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudUpload className="w-4 h-4" />
+                    <span>مزامنة كافة البيانات إلى Firebase الآن ({entities.length} منشأة)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {currentUser && (
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                  <span>المستخدم الحالي: <strong>{currentUser.displayName || currentUser.email}</strong></span>
+                </span>
+                <button
+                  onClick={async () => {
+                    await logoutUser();
+                    showToast('تم تسجيل الخروج من حساب Google', 'info');
+                  }}
+                  className="text-amber-300 hover:underline font-bold"
+                >
+                  تسجيل الخروج من Google
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Export Section */}

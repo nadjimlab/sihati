@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "HealthEntity": {
+      "title": "HealthEntity",
+      "description": "Health facility or medical practitioner in El Oued province (Pharmacy, Doctor, Clinic, Hospital)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the health entity",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the pharmacy, doctor, clinic, or hospital",
+          "maxLength": 200
+        },
+        "type": {
+          "type": "string",
+          "description": "Entity category",
+          "enum": ["صيدلية", "طبيب", "مستشفى", "عيادة"]
+        },
+        "specialty": {
+          "type": "string",
+          "description": "Medical specialty if applicable",
+          "maxLength": 150
+        },
+        "commune": {
+          "type": "string",
+          "description": "Municipality in El Oued",
+          "maxLength": 100
+        },
+        "address": {
+          "type": "string",
+          "description": "Full physical address and landmarks",
+          "maxLength": 300
+        },
+        "phone": {
+          "type": "string",
+          "description": "Primary contact telephone number",
+          "maxLength": 50
+        },
+        "secondaryPhone": {
+          "type": "string",
+          "description": "Secondary contact telephone number",
+          "maxLength": 50
+        },
+        "garde_days": {
+          "type": "array",
+          "description": "Days of week for on-duty night/weekend shift (0 to 6)"
+        },
+        "garde_dates": {
+          "type": "array",
+          "description": "Specific calendar dates for on-duty rotation (YYYY-MM-DD)"
+        },
+        "garde_shift": {
+          "type": "string",
+          "description": "Shift timing label",
+          "maxLength": 100
+        },
+        "latitude": {
+          "type": "number",
+          "description": "GPS Latitude coordinate"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "GPS Longitude coordinate"
+        },
+        "workingHours": {
+          "type": "string",
+          "description": "Regular operating hours",
+          "maxLength": 100
+        },
+        "isEmergency": {
+          "type": "boolean",
+          "description": "Whether entity provides 24/7 emergency services"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional public notes or instructions",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["name", "type", "commune", "address", "phone"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator user profile",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin user email",
+          "maxLength": 150
+        },
+        "role": {
+          "type": "string",
+          "description": "Access role",
+          "enum": ["admin", "superadmin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/entities/{entityId}": {
+      "schema": "HealthEntity",
+      "description": "Directory of all verified health entities (pharmacies, doctors, hospitals, clinics) in El Oued"
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminUser",
+      "description": "Administrator whitelist documents"
+    }
+  }
+}

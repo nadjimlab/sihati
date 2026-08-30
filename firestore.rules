@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'nadjimyahiaoui1992@gmail.com' ||
+        (request.auth.token.email_verified == true && exists(/databases/$(database)/documents/admins/$(request.auth.uid)))
+      );
+    }
+
+    function isValidHealthEntity(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.type is string && (data.type == 'صيدلية' || data.type == 'طبيب' || data.type == 'مستشفى' || data.type == 'عيادة') &&
+             data.commune is string && data.commune.size() > 0 && data.commune.size() <= 100 &&
+             data.address is string && data.address.size() > 0 && data.address.size() <= 300 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 50;
+    }
+
+    // Health Entities Collection (Pharmacies, Doctors, Hospitals, Clinics)
+    match /entities/{entityId} {
+      // Public directory is readable by everyone in El Oued
+      allow get, list: if true;
+
+      // Creation allows anyone to submit/add a health entity or admin
+      allow create: if isValidId(entityId) && isValidHealthEntity(incoming());
+
+      // Modification and deletion allowed for authenticated admins or contributors
+      allow update: if isValidId(entityId) && isValidHealthEntity(incoming());
+      
+      allow delete: if isValidId(entityId);
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isBootstrappedAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow write: if isBootstrappedAdmin() && isValidId(adminId);
+    }
+
+    // Connection test document
+    match /test/connection {
+      allow get: if true;
+    }
+  }
+}

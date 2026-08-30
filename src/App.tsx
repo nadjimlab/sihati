@@ -14,7 +14,13 @@ import { InAppMapModal } from './components/InAppMapModal';
 import { MobileDrawer } from './components/MobileDrawer';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { AdminDashboard } from './components/AdminDashboard';
-import { HeartPulse, ShieldAlert, MapPin, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { HeartPulse, ShieldAlert, MapPin, CheckCircle2, ShieldCheck, Cloud, CloudCheck } from 'lucide-react';
+import { 
+  subscribeToHealthEntities, 
+  addEntityToFirestore, 
+  updateEntityInFirestore, 
+  deleteEntityFromFirestore 
+} from './services/firebaseService';
 
 const STORAGE_KEY = 'eloued_health_custom_entities_v1';
 const ALL_ENTITIES_STORAGE_KEY = 'eloued_health_all_entities_v1';
@@ -26,6 +32,7 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isFirebaseSynced, setIsFirebaseSynced] = useState<boolean>(false);
 
   // PWA install prompt event state
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -76,6 +83,26 @@ export default function App() {
     return HEALTH_DATA;
   });
 
+  // Subscribe to real-time Firestore database
+  useEffect(() => {
+    const unsubscribe = subscribeToHealthEntities(
+      (firestoreEntities) => {
+        if (firestoreEntities && firestoreEntities.length > 0) {
+          setEntities(firestoreEntities);
+          saveEntitiesToStorage(firestoreEntities);
+          setIsFirebaseSynced(true);
+        }
+      },
+      (error) => {
+        console.warn('Firestore subscription using offline cache fallback:', error);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const saveEntitiesToStorage = (updatedEntities: HealthEntity[]) => {
     try {
       localStorage.setItem(ALL_ENTITIES_STORAGE_KEY, JSON.stringify(updatedEntities));
@@ -93,8 +120,13 @@ export default function App() {
       return updated;
     });
 
+    // Sync to Firestore
+    addEntityToFirestore(newEntity).catch((err) => {
+      console.warn('Failed to sync added entity to Firestore:', err);
+    });
+
     // Show toast notification
-    setToastMessage(`تمت إضافة "${newEntity.name}" (${newEntity.type}) بنجاح!`);
+    setToastMessage(`تمت إضافة "${newEntity.name}" (${newEntity.type}) وحفظها بنجاح!`);
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
@@ -106,6 +138,12 @@ export default function App() {
       saveEntitiesToStorage(updated);
       return updated;
     });
+
+    // Sync to Firestore
+    updateEntityInFirestore(updatedEntity).catch((err) => {
+      console.warn('Failed to sync updated entity to Firestore:', err);
+    });
+
     setToastMessage(`تم تحديث بيانات "${updatedEntity.name}" بنجاح!`);
     setTimeout(() => {
       setToastMessage(null);
@@ -124,6 +162,11 @@ export default function App() {
         }, 3000);
       }
       return updated;
+    });
+
+    // Sync to Firestore
+    deleteEntityFromFirestore(id).catch((err) => {
+      console.warn('Failed to sync delete to Firestore:', err);
     });
   };
 
