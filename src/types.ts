@@ -21,7 +21,7 @@ export interface HealthEntity {
   notes?: string;
 }
 
-export type ActiveTab = 'home' | 'map' | 'pharmacies' | 'garde' | 'doctors' | 'hospitals';
+export type ActiveTab = 'home' | 'map' | 'pharmacies' | 'garde' | 'doctors' | 'hospitals' | 'admin';
 
 export interface FilterState {
   searchQuery: string;
