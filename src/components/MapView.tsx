@@ -36,8 +36,9 @@ import {
   Compass
 } from 'lucide-react';
 import { HealthEntity, HealthEntityType } from '../types';
-import { COMMUNES } from '../data/mockData';
 import { calculateDistanceKm, formatDistance, estimateTravelTimes, getBearing } from '../utils/geoUtils';
+import { AdvancedFilterBar } from './AdvancedFilterBar';
+import { AdvancedFilterState, INITIAL_FILTER_STATE, filterEntities } from '../utils/filterUtils';
 
 // Coordinates of El Oued City (ولاية الوادي)
 const EL_OUED_CENTER: [number, number] = [33.368, 6.867];
@@ -162,10 +163,7 @@ export const MapView: React.FC<MapViewProps> = ({
   focusedEntity,
   onOpenAddModal 
 }) => {
-  const [selectedType, setSelectedType] = useState<string>('الكل');
-  const [selectedCommune, setSelectedCommune] = useState<string>('الكل');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [onlyOnDuty, setOnlyOnDuty] = useState<boolean>(false);
+  const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
   const [selectedEntity, setSelectedEntity] = useState<HealthEntity | null>(null);
 
   // Auto-focus on passed entity
@@ -195,37 +193,14 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [entities]);
 
   const filteredEntities = useMemo(() => {
-    return validEntities.filter(item => {
-      // Type filter
-      if (selectedType !== 'الكل' && item.type !== selectedType) {
-        return false;
-      }
-
-      // Commune filter
-      if (selectedCommune !== 'الكل' && item.commune !== selectedCommune) {
-        return false;
-      }
-
-      // On-duty filter
-      if (onlyOnDuty && !todayOnDutyIds.includes(item.id)) {
-        return false;
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = item.name.toLowerCase().includes(q);
-        const matchSpecialty = item.specialty ? item.specialty.toLowerCase().includes(q) : false;
-        const matchAddress = item.address.toLowerCase().includes(q);
-        const matchCommune = item.commune.toLowerCase().includes(q);
-        if (!matchName && !matchSpecialty && !matchAddress && !matchCommune) {
-          return false;
-        }
-      }
-
-      return true;
+    return filterEntities(validEntities, filters, {
+      todayOnDutyIds,
     });
-  }, [validEntities, selectedType, selectedCommune, onlyOnDuty, searchQuery, todayOnDutyIds]);
+  }, [validEntities, filters, todayOnDutyIds]);
+
+  const handleResetFilters = () => {
+    setFilters(INITIAL_FILTER_STATE);
+  };
 
   // Request user's current GPS position
   const handleLocateUser = () => {
@@ -364,69 +339,16 @@ export const MapView: React.FC<MapViewProps> = ({
           </div>
         )}
 
-        {/* Filters Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-3 border-t border-slate-100">
-          {/* Search */}
-          <div className="sm:col-span-4 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
-            <input
-              id="map-search-input"
-              type="text"
-              placeholder="ابحث بالاسم، التخصص أو الحي..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pr-9 pl-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600 text-slate-800"
-            />
-          </div>
-
-          {/* Type Filter */}
-          <div className="sm:col-span-3">
-            <select
-              id="map-type-filter"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600 font-medium cursor-pointer text-slate-800"
-            >
-              <option value="الكل">جميع المرافق الطبية</option>
-              <option value="صيدلية">الصيدليات فقط</option>
-              <option value="طبيب">الأطباء والعيادات التخصصية</option>
-              <option value="مستشفى">المستشفيات العمومية</option>
-              <option value="عيادة">العيادات متعددة الخدمات</option>
-            </select>
-          </div>
-
-          {/* Commune Filter */}
-          <div className="sm:col-span-3">
-            <select
-              id="map-commune-filter"
-              value={selectedCommune}
-              onChange={(e) => setSelectedCommune(e.target.value)}
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-600 font-medium cursor-pointer text-slate-800"
-            >
-              {COMMUNES.map(c => (
-                <option key={c} value={c}>
-                  {c === 'الكل' ? 'جميع البلديات' : `بلدية ${c}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Only On-Duty toggle */}
-          <div className="sm:col-span-2">
-            <button
-              id="map-only-garde-btn"
-              onClick={() => setOnlyOnDuty(!onlyOnDuty)}
-              className={`w-full py-2 px-2.5 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
-                onlyOnDuty
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${onlyOnDuty ? 'bg-white' : 'bg-emerald-600'}`}></span>
-              <span>المناوبة فقط</span>
-            </button>
-          </div>
-        </div>
+        {/* Advanced Filters Bar */}
+        <AdvancedFilterBar
+          filters={filters}
+          onFilterChange={setFilters}
+          onResetFilters={handleResetFilters}
+          entities={validEntities}
+          resultCount={filteredEntities.length}
+          totalCount={validEntities.length}
+          searchPlaceholder="ابحث بالاسم، التخصص، البلدية، الحي، أو الشارع..."
+        />
 
         {/* Legend pills */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">

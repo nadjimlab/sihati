@@ -10,7 +10,9 @@ import {
   Calendar,
   Building2,
   Pill,
-  Stethoscope
+  Stethoscope,
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import { HealthEntity } from '../types';
 import { ARABIC_DAYS } from '../data/mockData';
@@ -56,29 +58,29 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
     switch (item.type) {
       case 'صيدلية':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <Pill className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+            <Pill className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             صيدلية
           </span>
         );
       case 'طبيب':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-            <Stethoscope className="w-3.5 h-3.5 text-blue-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs">
+            <Stethoscope className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             {item.specialty || 'طبيب مختص'}
           </span>
         );
       case 'مستشفى':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
-            <Building2 className="w-3.5 h-3.5 text-slate-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200/80 shadow-2xs">
+            <Building2 className="w-3.5 h-3.5 text-slate-600 shrink-0" />
             مستشفى عمومي
           </span>
         );
       case 'عيادة':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
-            <Building2 className="w-3.5 h-3.5 text-teal-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200/80 shadow-2xs">
+            <Building2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
             عيادة صحية
           </span>
         );
@@ -90,26 +92,26 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
   return (
     <div 
       id={`card-${item.id}`} 
-      className={`bg-white rounded-xl border transition-all duration-200 p-5 flex flex-col justify-between relative group ${
+      className={`bg-white rounded-2xl border transition-all duration-200 p-5 flex flex-col justify-between relative group hover:shadow-lg ${
         isOnDuty 
-          ? 'border-emerald-300 shadow-sm ring-1 ring-emerald-200/60' 
-          : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+          ? 'border-emerald-400/80 shadow-xs ring-2 ring-emerald-500/20 bg-gradient-to-b from-emerald-50/20 to-white' 
+          : 'border-slate-200/90 hover:border-blue-300 shadow-2xs'
       }`}
     >
       {/* Top badges & Commune */}
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3.5">
           <div className="flex flex-wrap items-center gap-1.5">
             {getTypeBadge()}
             
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-              <MapPin className="w-3 h-3 ml-1 text-slate-500" />
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100/90 text-slate-700 border border-slate-200/80">
+              <MapPin className="w-3 h-3 ml-1 text-slate-500 shrink-0" />
               {item.commune}
             </span>
 
             {item.isEmergency && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-700 border border-red-200 animate-pulse">
-                <ShieldAlert className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-red-50 text-red-700 border border-red-200 animate-pulse">
+                <ShieldAlert className="w-3 h-3 text-red-600 shrink-0" />
                 استعجالات 24/24
               </span>
             )}
@@ -117,7 +119,7 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
 
           {/* On-Duty Highlight */}
           {isOnDuty && (
-            <div className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-xs shrink-0">
+            <div className="bg-emerald-600 text-white text-xs font-extrabold px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-xs shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-200 animate-ping"></span>
               مناوبة اليوم
             </div>
@@ -125,19 +127,19 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
         </div>
 
         {/* Title / Name */}
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors mb-2">
+        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors mb-2">
           {item.name}
         </h3>
 
         {/* Address */}
         <div className="flex items-start gap-1.5 text-xs text-slate-600 mb-2.5">
           <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-          <span className="leading-relaxed">{item.address}</span>
+          <span className="leading-relaxed font-medium">{item.address}</span>
         </div>
 
         {/* Working hours / shift */}
         {item.workingHours && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-2.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 mb-2.5 bg-slate-50/90 px-3 py-1.5 rounded-xl border border-slate-200/70 font-medium">
             <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span>{item.workingHours}</span>
           </div>
@@ -145,11 +147,11 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
 
         {/* Garde Days info for pharmacies */}
         {item.type === 'صيدلية' && item.garde_days && item.garde_days.length > 0 && (
-          <div className="text-xs text-slate-600 mb-3 flex items-start gap-1.5 bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
+          <div className="text-xs text-slate-600 mb-3 flex items-start gap-2 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100/90">
             <Calendar className="w-3.5 h-3.5 text-emerald-700 mt-0.5 shrink-0" />
             <div>
-              <span className="font-semibold text-emerald-900">أيام المناوبة الدورية: </span>
-              <span className="text-emerald-800">
+              <span className="font-bold text-emerald-900">أيام المناوبة الدورية: </span>
+              <span className="text-emerald-800 font-medium">
                 {item.garde_days.length === 7 
                   ? 'مناوبة يومية مستمرة' 
                   : item.garde_days.map(d => ARABIC_DAYS[d]).join(' • ')}
@@ -165,21 +167,21 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
 
         {/* Medical notes/Specialties details */}
         {item.notes && (
-          <p className="text-xs text-slate-600 bg-blue-50/60 p-2.5 rounded-lg border border-blue-100 mb-3">
+          <p className="text-xs text-slate-600 bg-blue-50/50 p-2.5 rounded-xl border border-blue-100 mb-3 leading-relaxed">
             {item.notes}
           </p>
         )}
       </div>
 
       {/* Action buttons (Direct Call, Copy, Map) */}
-      <div className="pt-3 mt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+      <div className="pt-3.5 mt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
         {/* Phone display and copy */}
         <div className="flex items-center gap-1.5">
           <button
             id={`copy-phone-${item.id}`}
             onClick={handleCopyPhone}
             title="نسخ رقم الهاتف"
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors text-xs flex items-center gap-1.5 border border-slate-200"
+            className="p-2 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors text-xs flex items-center gap-1.5 border border-slate-200/80 active:scale-95"
           >
             {copied ? (
               <>
@@ -188,8 +190,8 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-slate-500" />
-                <span className="font-mono font-medium text-slate-700 dir-ltr">{item.phone}</span>
+                <Copy className="w-3.5 h-3.5 text-slate-400" />
+                <span className="font-mono font-bold text-slate-800 dir-ltr">{item.phone}</span>
               </>
             )}
           </button>
@@ -203,7 +205,7 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
               onClick={handleOpenMap}
               type="button"
               title="عرض الموقع والمسار التفاعلي داخل التطبيق"
-              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors inline-flex items-center justify-center border border-blue-200"
+              className="p-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 transition-all inline-flex items-center justify-center border border-blue-200/70 active:scale-95 shadow-2xs"
             >
               <Navigation className="w-4 h-4 text-blue-600" />
               <span className="sr-only">عرض الموقع والمسار داخل التطبيق</span>
@@ -215,7 +217,7 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               title="الاتجاهات على الخريطة"
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors inline-flex items-center justify-center border border-slate-200"
+              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all inline-flex items-center justify-center border border-slate-200/80 active:scale-95"
             >
               <Navigation className="w-4 h-4 text-slate-600" />
               <span className="sr-only">الاتجاهات على الخريطة</span>
@@ -225,9 +227,9 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
           <a
             id={`call-btn-${item.id}`}
             href={`tel:${item.phone.replace(/\s+/g, '')}`}
-            className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
           >
-            <Phone className="w-3.5 h-3.5 ml-0.5" />
+            <Phone className="w-3.5 h-3.5 ml-0.5 text-white" />
             <span>اتصال مباشر</span>
           </a>
         </div>
@@ -235,3 +237,4 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
     </div>
   );
 };
+
