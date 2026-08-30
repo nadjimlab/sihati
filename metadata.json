@@ -1,0 +1,6 @@
+{
+  "name": "دليل الصحة - الوادي",
+  "description": "دليل طبي شامل لولاية الوادي للبحث عن الصيدليات، الصيدليات المناوبة، الأطباء، والمستشفيات والعيادات بسهولة وسرعة.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
