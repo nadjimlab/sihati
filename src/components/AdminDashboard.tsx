@@ -27,6 +27,7 @@ import {
   MapPin, 
   Clock, 
   Eye, 
+  EyeOff,
   LogOut, 
   Settings, 
   Layers, 
@@ -641,36 +642,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
 
           {/* Login Type Selector */}
-          <div className="flex bg-slate-100 p-1 rounded-2xl gap-1">
+          <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1.5 border border-slate-200">
             <button
               type="button"
+              id="admin-mode-master-btn"
               onClick={() => {
                 setLoginMode('admin');
                 setAuthError('');
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 px-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 ${
                 loginMode === 'admin'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'bg-white/70 text-slate-700 hover:bg-white hover:text-slate-950 font-bold'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-4 h-4 shrink-0" />
               <span>المدير العام (Master)</span>
             </button>
 
             <button
               type="button"
+              id="admin-mode-moderator-btn"
               onClick={() => {
                 setLoginMode('moderator');
                 setAuthError('');
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 px-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 ${
                 loginMode === 'moderator'
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'bg-white/70 text-slate-700 hover:bg-white hover:text-slate-950 font-bold'
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5" />
+              <UserCheck className="w-4 h-4 shrink-0" />
               <span>دخول مشرف معتمد</span>
             </button>
           </div>
@@ -678,28 +681,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {loginMode === 'moderator' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  اسم المستخدم للمشرف (Username)
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-900">
+                  <User className="w-4 h-4 text-indigo-600" />
+                  <span>اسم المستخدم للمشرف (Username):</span>
                 </label>
-                <input
-                  id="moderator-username-input"
-                  type="text"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  placeholder="أدخل اسم المستخدم..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-sm font-medium transition-all"
-                  autoFocus
-                  required
-                />
+                <div className="relative">
+                  <input
+                    id="moderator-username-input"
+                    type="text"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="اكتب اسم المستخدم هنا..."
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 bg-white text-slate-900 font-bold text-sm sm:text-base placeholder:text-slate-400 shadow-xs transition-all outline-none"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium">
+                  👤 اكتب اسم المستخدم المخصص لك من طرف الإدارة.
+                </p>
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {loginMode === 'admin' 
-                  ? 'كلمة مرور المدير العام (Admin Password / PIN)' 
-                  : 'الرمز السري أو كلمة مرور المشرف'}
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-900">
+                <KeyRound className={`w-4 h-4 ${loginMode === 'admin' ? 'text-blue-600' : 'text-indigo-600'}`} />
+                <span>
+                  {loginMode === 'admin' 
+                    ? 'كلمة مرور المدير العام (Admin Password / PIN):' 
+                    : 'الرمز السري أو كلمة مرور المشرف (PIN):'}
+                </span>
               </label>
               <div className="relative">
                 <input
@@ -707,31 +719,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder={loginMode === 'admin' ? 'أدخل كلمة المرور...' : 'أدخل الرمز السري...'}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-sm font-medium transition-all"
+                  placeholder={loginMode === 'admin' ? 'اكتب كلمة المرور هنا...' : 'اكتب الرمز السري هنا...'}
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 font-bold text-sm sm:text-base placeholder:text-slate-400 shadow-xs transition-all outline-none ${
+                    loginMode === 'admin'
+                      ? 'focus:border-blue-600 focus:ring-4 focus:ring-blue-100'
+                      : 'focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100'
+                  }`}
                   autoFocus={loginMode === 'admin'}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg transition-colors"
+                  title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
-                  <Eye className="w-4 h-4" />
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-slate-600 font-medium">
+                🔒 الحروف حساسة لحالة الأحرف (الافتراضية للمدير العام: <code className="bg-slate-100 text-blue-700 px-1.5 py-0.5 rounded font-mono font-bold text-xs">NADJIM92bejaia</code>)
+              </p>
             </div>
 
             <button
               id="admin-login-submit-btn"
               type="submit"
-              className={`w-full py-3 text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.99] ${
+              className={`w-full py-3.5 text-white font-black rounded-xl text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer ${
                 loginMode === 'admin'
-                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
-                  : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30'
+                  : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'
               }`}
             >
-              <KeyRound className="w-4 h-4" />
+              <KeyRound className="w-5 h-5" />
               <span>
                 {loginMode === 'admin' ? 'تسجيل الدخول كمدير عام' : 'تسجيل دخول المشرف'}
               </span>
@@ -740,15 +760,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Google Sign In Divider */}
           <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-200 w-full"></div>
-            <span className="bg-white px-3 text-[11px] font-bold text-slate-400">أو</span>
+            <div className="border-t border-slate-300 w-full"></div>
+            <span className="bg-white px-3 text-xs font-bold text-slate-500">أو</span>
           </div>
 
           {/* Google Sign In Button */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs border border-slate-300 shadow-xs transition-all flex items-center justify-center gap-2.5 active:scale-[0.99]"
+            className="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-900 font-bold rounded-xl text-xs sm:text-sm border-2 border-slate-300 shadow-xs transition-all flex items-center justify-center gap-2.5 active:scale-[0.99] cursor-pointer"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
