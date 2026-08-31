@@ -71,7 +71,7 @@ type AdminSubTab = 'overview' | 'pending' | 'entities' | 'garde' | 'backup' | 's
 
 const ADMIN_STORAGE_PASS_KEY = 'eloued_health_admin_password';
 const ADMIN_SESSION_AUTH_KEY = 'eloued_health_admin_auth';
-const DEFAULT_ADMIN_PASS = 'admin123';
+const DEFAULT_ADMIN_PASS = 'NADJIM92bejaia';
 
 const DAYS_OF_WEEK = [
   { id: 0, name: 'الأحد' },
@@ -191,7 +191,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Authentication Handlers
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const storedPass = localStorage.getItem(ADMIN_STORAGE_PASS_KEY) || DEFAULT_ADMIN_PASS;
+    const rawStored = localStorage.getItem(ADMIN_STORAGE_PASS_KEY);
+    const storedPass = (rawStored && rawStored !== 'admin123') ? rawStored : DEFAULT_ADMIN_PASS;
     if (passwordInput.trim() === storedPass) {
       setIsAuthenticated(true);
       sessionStorage.setItem(ADMIN_SESSION_AUTH_KEY, 'true');
@@ -604,16 +605,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                 >
                   <Eye className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-                <span>كلمة المرور الافتراضية: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-mono font-bold">admin123</code></span>
-                <button
-                  type="button"
-                  onClick={() => setPasswordInput('admin123')}
-                  className="text-blue-600 hover:underline font-bold"
-                >
-                  تعبئة تلقائية
                 </button>
               </div>
             </div>
