@@ -23,9 +23,12 @@ import {
   updateEntityInFirestore, 
   deleteEntityFromFirestore 
 } from './services/firebaseService';
-
-const STORAGE_KEY = 'eloued_health_custom_entities_v1';
-const ALL_ENTITIES_STORAGE_KEY = 'eloued_health_all_entities_v1';
+import { 
+  loadCachedEntities, 
+  saveCachedEntities, 
+  initStorageLifecycle,
+  resetStorageToDefaults 
+} from './utils/storageManager';
 
 // Inner component to encapsulate routing & state
 function AppContent() {
@@ -48,8 +51,12 @@ function AppContent() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Initialize auto-cleanup & storage lifecycle for localStorage
+    const cleanupStorage = initStorageLifecycle();
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      cleanupStorage();
     };
   }, []);
 
@@ -58,28 +65,9 @@ function AppContent() {
   const [isInAppMapOpen, setIsInAppMapOpen] = useState<boolean>(false);
   const [focusedMapEntity, setFocusedMapEntity] = useState<HealthEntity | null>(null);
 
-  // Initialize entities with mock data plus any saved custom entities
+  // Initialize entities safely with cached data & auto-cleaned storage
   const [entities, setEntities] = useState<HealthEntity[]>(() => {
-    try {
-      const fullSaved = localStorage.getItem(ALL_ENTITIES_STORAGE_KEY);
-      if (fullSaved) {
-        const parsed: HealthEntity[] = JSON.parse(fullSaved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed: HealthEntity[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return [...parsed, ...HEALTH_DATA];
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load custom entities from storage', e);
-    }
-    return HEALTH_DATA;
+    return loadCachedEntities();
   });
 
   // Subscribe to real-time Firestore database
@@ -88,7 +76,7 @@ function AppContent() {
       (firestoreEntities) => {
         if (firestoreEntities && firestoreEntities.length > 0) {
           setEntities(firestoreEntities);
-          saveEntitiesToStorage(firestoreEntities);
+          saveCachedEntities(firestoreEntities);
           setIsFirebaseSynced(true);
         }
       },
@@ -103,13 +91,7 @@ function AppContent() {
   }, []);
 
   const saveEntitiesToStorage = (updatedEntities: HealthEntity[]) => {
-    try {
-      localStorage.setItem(ALL_ENTITIES_STORAGE_KEY, JSON.stringify(updatedEntities));
-      const customOnly = updatedEntities.filter(e => e.id.startsWith('custom-'));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(customOnly));
-    } catch (e) {
-      console.error('Failed to save entity to localStorage', e);
-    }
+    saveCachedEntities(updatedEntities);
   };
 
   const handleAddEntity = (newEntity: HealthEntity) => {
@@ -183,8 +165,7 @@ function AppContent() {
   };
 
   const handleResetToDefaults = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(ALL_ENTITIES_STORAGE_KEY);
+    resetStorageToDefaults();
     setEntities(HEALTH_DATA);
     setToastMessage('تمت استعادة البيانات الافتراضية بنجاح.');
     setTimeout(() => {
