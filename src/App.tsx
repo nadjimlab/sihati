@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ActiveTab, HealthEntity } from './types';
 import { HEALTH_DATA } from './data/mockData';
 import { Header } from './components/Header';
@@ -12,9 +13,10 @@ import { EmergencyModal } from './components/EmergencyModal';
 import { AddEntityModal } from './components/AddEntityModal';
 import { InAppMapModal } from './components/InAppMapModal';
 import { MobileDrawer } from './components/MobileDrawer';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { AdminDashboard } from './components/AdminDashboard';
-import { HeartPulse, ShieldAlert, MapPin, CheckCircle2, ShieldCheck, Cloud, CloudCheck } from 'lucide-react';
+import { HeartPulse, CheckCircle2 } from 'lucide-react';
 import { 
   subscribeToHealthEntities, 
   addEntityToFirestore, 
@@ -25,7 +27,8 @@ import {
 const STORAGE_KEY = 'eloued_health_custom_entities_v1';
 const ALL_ENTITIES_STORAGE_KEY = 'eloued_health_all_entities_v1';
 
-export default function App() {
+// Inner component to encapsulate routing & state
+function AppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -39,9 +42,7 @@ export default function App() {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
     };
 
@@ -60,7 +61,6 @@ export default function App() {
   // Initialize entities with mock data plus any saved custom entities
   const [entities, setEntities] = useState<HealthEntity[]>(() => {
     try {
-      // Check if full dataset was saved or custom items
       const fullSaved = localStorage.getItem(ALL_ENTITIES_STORAGE_KEY);
       if (fullSaved) {
         const parsed: HealthEntity[] = JSON.parse(fullSaved);
@@ -73,7 +73,6 @@ export default function App() {
       if (saved) {
         const parsed: HealthEntity[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Merge custom items at beginning
           return [...parsed, ...HEALTH_DATA];
         }
       }
@@ -126,10 +125,14 @@ export default function App() {
     });
 
     // Show toast notification
-    setToastMessage(`تمت إضافة "${newEntity.name}" (${newEntity.type}) وحفظها بنجاح!`);
+    if (newEntity.status === 'pending') {
+      setToastMessage(`شكراً لك! تم إرسال "${newEntity.name}" وسيتم تدقيقها ونشرها بعد مراجعة المشرف.`);
+    } else {
+      setToastMessage(`تمت إضافة "${newEntity.name}" (${newEntity.type}) وحفظها بنجاح!`);
+    }
     setTimeout(() => {
       setToastMessage(null);
-    }, 4000);
+    }, 4500);
   };
 
   const handleEditEntity = (updatedEntity: HealthEntity) => {
@@ -200,20 +203,26 @@ export default function App() {
     setIsInAppMapOpen(false);
   };
 
-  // Filter entities by category
-  const pharmacies = useMemo(
-    () => entities.filter((item) => item.type === 'صيدلية'),
+  // Only approved entities are visible to the public site
+  const approvedEntities = useMemo(
+    () => entities.filter((item) => item.status !== 'pending'),
     [entities]
+  );
+
+  // Filter approved entities by category
+  const pharmacies = useMemo(
+    () => approvedEntities.filter((item) => item.type === 'صيدلية'),
+    [approvedEntities]
   );
 
   const doctors = useMemo(
-    () => entities.filter((item) => item.type === 'طبيب'),
-    [entities]
+    () => approvedEntities.filter((item) => item.type === 'طبيب'),
+    [approvedEntities]
   );
 
   const facilities = useMemo(
-    () => entities.filter((item) => item.type === 'مستشفى' || item.type === 'عيادة'),
-    [entities]
+    () => approvedEntities.filter((item) => item.type === 'مستشفى' || item.type === 'عيادة'),
+    [approvedEntities]
   );
 
   // Compute on-duty pharmacies for today
@@ -229,207 +238,229 @@ export default function App() {
   }, [todayOnDutyPharmacies]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col selection:bg-blue-600 selection:text-white font-['Tajawal',sans-serif]">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="text-xs sm:text-sm font-bold">{toastMessage}</span>
-          <button 
-            onClick={() => setActiveTab('map')} 
-            className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-lg font-bold mr-2"
-          >
-            عرض بالخريطة
-          </button>
-        </div>
-      )}
-
-      {/* Header */}
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
-        onOpenDrawer={() => setIsDrawerOpen(true)}
-        onOpenInstallModal={() => setIsInstallModalOpen(true)}
-        onDutyCountToday={todayOnDutyPharmacies.length}
-      />
-
-      {/* Mobile Navigation Drawer */}
-      <MobileDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
-        onOpenInstallModal={() => setIsInstallModalOpen(true)}
-        onDutyCountToday={todayOnDutyPharmacies.length}
-      />
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-        {activeTab === 'home' && (
-          <HomeView
-            entities={entities}
-            todayOnDutyPharmacies={todayOnDutyPharmacies}
-            setActiveTab={setActiveTab}
-            onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
-            onViewOnMap={handleViewOnMap}
-          />
-        )}
-
-        {activeTab === 'map' && (
-          <MapView
-            entities={entities}
-            todayOnDutyIds={todayOnDutyIds}
-            focusedEntity={focusedMapEntity}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
-          />
-        )}
-
-        {activeTab === 'pharmacies' && (
-          <PharmaciesView
-            pharmacies={pharmacies}
-            todayOnDutyIds={todayOnDutyIds}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
-            onViewOnMap={handleViewOnMap}
-          />
-        )}
-
-        {activeTab === 'garde' && (
-          <GardeView 
-            pharmacies={pharmacies} 
-            onViewOnMap={handleViewOnMap}
-          />
-        )}
-
-        {activeTab === 'doctors' && (
-          <DoctorsView 
-            doctors={doctors} 
-            onOpenAddModal={() => setIsAddModalOpen(true)}
-            onViewOnMap={handleViewOnMap}
-          />
-        )}
-
-        {activeTab === 'hospitals' && (
-          <HospitalsView 
-            facilities={facilities} 
-            onOpenAddModal={() => setIsAddModalOpen(true)}
-            onViewOnMap={handleViewOnMap}
-          />
-        )}
-
-        {activeTab === 'admin' && (
-          <AdminDashboard
-            entities={entities}
-            onUpdateEntities={handleUpdateEntities}
-            onAddEntity={handleAddEntity}
-            onDeleteEntity={handleDeleteEntity}
-            onEditEntity={handleEditEntity}
-            onResetToDefaults={handleResetToDefaults}
-            setActiveTab={setActiveTab}
-            onViewOnMap={handleViewOnMap}
-          />
-        )}
-      </main>
-
-      {/* In-App Map Navigation Modal (Browse without leaving to Google Maps) */}
-      <InAppMapModal
-        entity={inAppMapEntity}
-        isOpen={isInAppMapOpen}
-        onClose={() => setIsInAppMapOpen(false)}
-        onOpenFullMap={handleOpenFullMapFromModal}
-        isOnDuty={inAppMapEntity ? todayOnDutyIds.includes(inAppMapEntity.id) : false}
-      />
-
-      {/* Add Entity Modal */}
-      <AddEntityModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddEntity={handleAddEntity}
-      />
-
-      {/* Emergency Modal */}
-      <EmergencyModal
-        isOpen={isEmergencyModalOpen}
-        onClose={() => setIsEmergencyModalOpen(false)}
-      />
-
-      {/* PWA Install Modal */}
-      <PwaInstallModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-        deferredPrompt={deferredPrompt}
-        onInstallSuccess={() => {
-          setToastMessage('تم تثبيت التطبيق بنجاح!');
-          setTimeout(() => setToastMessage(null), 3000);
-        }}
-      />
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-12 py-8 text-xs text-slate-500">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-right">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
-              <HeartPulse className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div>
-              <p className="font-bold text-slate-900 text-sm">دليل الصحة - ولاية الوادي 39</p>
-              <p className="text-slate-500 text-xs">خدمة مجانية موثوقة للبحث عن الخدمات الصحية والصيدليات المناوبة</p>
+    <Routes>
+      {/* Route 1: Dedicated Admin Dashboard Route */}
+      <Route
+        path="/admin"
+        element={
+          <div className="min-h-screen bg-slate-900 text-slate-100 p-4 sm:p-6 lg:p-8 font-['Tajawal',sans-serif]">
+            <div className="max-w-7xl mx-auto">
+              <AdminDashboard
+                entities={entities}
+                onUpdateEntities={handleUpdateEntities}
+                onAddEntity={handleAddEntity}
+                onDeleteEntity={handleDeleteEntity}
+                onEditEntity={handleEditEntity}
+                onResetToDefaults={handleResetToDefaults}
+                onViewOnMap={handleViewOnMap}
+              />
             </div>
           </div>
+        }
+      />
 
-          {/* Quick links */}
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold">
-            <button onClick={() => setActiveTab('home')} className="text-slate-600 hover:text-blue-600 transition-colors">
-              الرئيسية
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setActiveTab('map')} className="text-blue-600 hover:text-blue-700 font-bold transition-colors">
-              الخريطة التفاعلية والمسار
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setActiveTab('garde')} className="text-emerald-700 hover:text-emerald-800 transition-colors">
-              الصيدليات المناوبة
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setActiveTab('pharmacies')} className="text-slate-600 hover:text-blue-600 transition-colors">
-              الصيدليات
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setActiveTab('doctors')} className="text-slate-600 hover:text-blue-600 transition-colors">
-              الأطباء
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setActiveTab('hospitals')} className="text-slate-600 hover:text-blue-600 transition-colors">
-              المستشفيات
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setIsInstallModalOpen(true)} className="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
-              📱 تثبيت على الهاتف
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setIsAddModalOpen(true)} className="text-blue-700 hover:text-blue-800 font-bold transition-colors">
-              + إضافة منشأة
-            </button>
-            <span className="text-slate-300">•</span>
-            <button onClick={() => setIsEmergencyModalOpen(true)} className="text-red-600 hover:text-red-700 font-bold transition-colors">
-              أرقام الطوارئ (14 / 17 / 1055)
-            </button>
-            <span className="text-slate-300">•</span>
-            <button 
-              id="footer-admin-link-btn"
-              onClick={() => setActiveTab('admin')} 
-              className="text-slate-700 hover:text-slate-900 font-extrabold transition-colors flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-md"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>لوحة تحكم المشرف</span>
-            </button>
+      {/* Route 2: Public App Main Route */}
+      <Route
+        path="/*"
+        element={
+          <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col selection:bg-blue-600 selection:text-white font-['Tajawal',sans-serif]">
+            {/* Toast Notification */}
+            {toastMessage && (
+              <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-xs sm:text-sm font-bold">{toastMessage}</span>
+                <button 
+                  onClick={() => setActiveTab('map')} 
+                  className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-lg font-bold mr-2"
+                >
+                  عرض بالخريطة
+                </button>
+              </div>
+            )}
+
+            {/* Header */}
+            <Header
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
+              onOpenAddModal={() => setIsAddModalOpen(true)}
+              onOpenDrawer={() => setIsDrawerOpen(true)}
+              onOpenInstallModal={() => setIsInstallModalOpen(true)}
+              onDutyCountToday={todayOnDutyPharmacies.length}
+            />
+
+            {/* Mobile Navigation Drawer */}
+            <MobileDrawer
+              isOpen={isDrawerOpen}
+              onClose={() => setIsDrawerOpen(false)}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
+              onOpenAddModal={() => setIsAddModalOpen(true)}
+              onOpenInstallModal={() => setIsInstallModalOpen(true)}
+              onDutyCountToday={todayOnDutyPharmacies.length}
+            />
+
+            {/* Main Content Area */}
+            <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 pt-4 sm:pt-8 pb-20 md:pb-8">
+              {activeTab === 'home' && (
+                <HomeView
+                  entities={approvedEntities}
+                  todayOnDutyPharmacies={todayOnDutyPharmacies}
+                  setActiveTab={setActiveTab}
+                  onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
+                  onOpenAddModal={() => setIsAddModalOpen(true)}
+                  onViewOnMap={handleViewOnMap}
+                />
+              )}
+
+              {activeTab === 'map' && (
+                <MapView
+                  entities={approvedEntities}
+                  todayOnDutyIds={todayOnDutyIds}
+                  focusedEntity={focusedMapEntity}
+                  onOpenAddModal={() => setIsAddModalOpen(true)}
+                />
+              )}
+
+              {activeTab === 'pharmacies' && (
+                <PharmaciesView
+                  pharmacies={pharmacies}
+                  todayOnDutyIds={todayOnDutyIds}
+                  onOpenAddModal={() => setIsAddModalOpen(true)}
+                  onViewOnMap={handleViewOnMap}
+                />
+              )}
+
+              {activeTab === 'garde' && (
+                <GardeView 
+                  pharmacies={pharmacies} 
+                  onViewOnMap={handleViewOnMap}
+                />
+              )}
+
+              {activeTab === 'doctors' && (
+                <DoctorsView 
+                  doctors={doctors} 
+                  onOpenAddModal={() => setIsAddModalOpen(true)}
+                  onViewOnMap={handleViewOnMap}
+                />
+              )}
+
+              {activeTab === 'hospitals' && (
+                <HospitalsView 
+                  facilities={facilities} 
+                  onOpenAddModal={() => setIsAddModalOpen(true)}
+                  onViewOnMap={handleViewOnMap}
+                />
+              )}
+            </main>
+
+            {/* In-App Map Navigation Modal */}
+            <InAppMapModal
+              entity={inAppMapEntity}
+              isOpen={isInAppMapOpen}
+              onClose={() => setIsInAppMapOpen(false)}
+              onOpenFullMap={handleOpenFullMapFromModal}
+              isOnDuty={inAppMapEntity ? todayOnDutyIds.includes(inAppMapEntity.id) : false}
+            />
+
+            {/* Add Entity Modal */}
+            <AddEntityModal
+              isOpen={isAddModalOpen}
+              onClose={() => setIsAddModalOpen(false)}
+              onAddEntity={handleAddEntity}
+            />
+
+            {/* Emergency Modal */}
+            <EmergencyModal
+              isOpen={isEmergencyModalOpen}
+              onClose={() => setIsEmergencyModalOpen(false)}
+            />
+
+            {/* PWA Install Modal */}
+            <PwaInstallModal
+              isOpen={isInstallModalOpen}
+              onClose={() => setIsInstallModalOpen(false)}
+              deferredPrompt={deferredPrompt}
+              onInstallSuccess={() => {
+                setToastMessage('تم تثبيت التطبيق بنجاح!');
+                setTimeout(() => setToastMessage(null), 3000);
+              }}
+            />
+
+            {/* Mobile Bottom Navigation Bar (Visible only on mobile devices) */}
+            <MobileBottomNav
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onOpenDrawer={() => setIsDrawerOpen(true)}
+              onDutyCountToday={todayOnDutyPharmacies.length}
+            />
+
+            {/* Footer */}
+            <footer className="bg-white border-t border-slate-200 mt-8 sm:mt-12 py-8 text-xs text-slate-500 mb-16 md:mb-0">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-right">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
+                    <HeartPulse className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">دليل الصحة - ولاية الوادي 39</p>
+                    <p className="text-slate-500 text-xs">خدمة مجانية موثوقة للبحث عن الخدمات الصحية والصيدليات المناوبة</p>
+                  </div>
+                </div>
+
+                {/* Quick links */}
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold">
+                  <button onClick={() => setActiveTab('home')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                    الرئيسية
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setActiveTab('map')} className="text-blue-600 hover:text-blue-700 font-bold transition-colors">
+                    الخريطة التفاعلية والمسار
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setActiveTab('garde')} className="text-emerald-700 hover:text-emerald-800 transition-colors">
+                    الصيدليات المناوبة
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setActiveTab('pharmacies')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                    الصيدليات
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setActiveTab('doctors')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                    الأطباء
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setActiveTab('hospitals')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                    المستشفيات
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setIsInstallModalOpen(true)} className="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
+                    📱 تثبيت على الهاتف
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setIsAddModalOpen(true)} className="text-blue-700 hover:text-blue-800 font-bold transition-colors">
+                    + إضافة منشأة
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={() => setIsEmergencyModalOpen(true)} className="text-red-600 hover:text-red-700 font-bold transition-colors">
+                    أرقام الطوارئ (14 / 17 / 1055)
+                  </button>
+                </div>
+              </div>
+            </footer>
           </div>
-        </div>
-      </footer>
-    </div>
+        }
+      />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }

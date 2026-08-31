@@ -39,7 +39,10 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
 
   // Base list of pharmacies on duty for this specific date/day
   const dateSpecificOnDutyPharmacies = useMemo(() => {
-    const formattedYMD = selectedDate.toISOString().split('T')[0];
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const formattedYMD = `${year}-${month}-${day}`;
 
     return pharmacies.filter(pharmacy => {
       const matchDay = pharmacy.garde_days?.includes(dayOfWeekIndex);

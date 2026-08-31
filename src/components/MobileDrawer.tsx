@@ -121,17 +121,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       activeBg: 'bg-blue-600 text-white',
       inactiveBg: 'hover:bg-slate-100 text-slate-800',
     },
-    {
-      id: 'admin' as ActiveTab,
-      label: 'لوحة تحكم المشرف (Admin)',
-      icon: ShieldCheck,
-      badge: 'إدارة',
-      badgeBg: 'bg-amber-100 text-amber-900',
-      desc: 'إدارة وتعديل البيانات وحفظ النسخ الاحتياطية',
-      color: 'text-amber-600',
-      activeBg: 'bg-slate-900 text-white',
-      inactiveBg: 'hover:bg-slate-100 text-slate-800',
-    },
   ];
 
   return (

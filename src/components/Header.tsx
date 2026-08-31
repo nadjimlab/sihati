@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { 
   HeartPulse, 
   Pill, 
@@ -10,8 +10,9 @@ import {
   Menu,
   Smartphone,
   Navigation,
-  ShieldCheck,
-  Plus
+  Plus,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { ActiveTab } from '../types';
 
@@ -34,76 +35,86 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenInstallModal,
   onDutyCountToday,
 }) => {
-  return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-      {/* Top Banner with branding & Quick actions */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16 sm:h-20">
-          
-          {/* Logo & Mobile Menu Hamburger Button */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            {/* Mobile Drawer Trigger Button */}
-            <button
-              id="mobile-drawer-trigger-btn"
-              onClick={onOpenDrawer}
-              className="p-2 -mr-1 rounded-xl text-slate-700 hover:text-blue-600 hover:bg-slate-100 md:hidden transition-colors border border-slate-200/80 active:scale-95"
-              aria-label="فتح القائمة الجانبية"
-              title="القائمة والتنقل"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-            {/* Logo & Title */}
+  const checkScroll = () => {
+    if (tabsContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
+      // In RTL, scrollLeft is usually 0 or negative
+      const maxScroll = scrollWidth - clientWidth;
+      const currentScroll = Math.abs(scrollLeft);
+      setCanScrollRight(currentScroll > 10);
+      setCanScrollLeft(currentScroll < maxScroll - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, []);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (tabsContainerRef.current) {
+      const amount = direction === 'left' ? -150 : 150;
+      tabsContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs font-['Tajawal',sans-serif]">
+      {/* Top Banner with branding & Quick actions */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-6">
+        <div className="flex items-center justify-between h-14 sm:h-16 md:h-20 gap-2">
+          
+          {/* Logo & Site Title (Always clear and never overlapping) */}
+          <div className="flex items-center gap-2 min-w-0 shrink">
             <button 
               id="brand-logo-btn"
               onClick={() => setActiveTab('home')}
-              className="flex items-center gap-2.5 sm:gap-3.5 text-right focus:outline-hidden group"
+              className="flex items-center gap-2 sm:gap-3 text-right focus:outline-hidden group min-w-0"
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-600/25 group-hover:scale-105 transition-all">
-                <HeartPulse className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.2]" />
+              <div className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white shadow-sm shadow-blue-600/20 group-hover:scale-105 transition-all shrink-0">
+                <HeartPulse className="w-4.5 h-4.5 sm:w-6 sm:h-6 md:w-7 md:h-7 stroke-[2.2]" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-base sm:text-xl text-slate-900 tracking-tight">
-                    دليل الصحة <span className="text-blue-600">الوادي</span>
-                  </span>
-                  <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/70 hidden sm:inline-block">
-                    ولاية 39
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 font-medium hidden sm:block">
-                  المنصة الرقمية الموحدة للصيدليات، الأطباء والمرافق الصحية
-                </p>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <span className="font-black text-sm sm:text-lg md:text-xl text-slate-900 tracking-tight whitespace-nowrap">
+                  دليل الصحة <span className="text-blue-600">الوادي</span>
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70 shrink-0">
+                  39
+                </span>
               </div>
             </button>
           </div>
 
-          {/* Quick Actions & Emergency */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
-            {/* Install App CTA Button */}
+          {/* Quick Actions (Sized with safe gaps so it NEVER overlaps on any screen) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Install App CTA Button (Shown on desktop & tablets) */}
             <button
               id="header-install-pwa-btn"
               onClick={onOpenInstallModal}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-extrabold text-xs sm:text-sm transition-all shadow-2xs active:scale-95"
+              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-bold text-xs sm:text-sm transition-all shadow-2xs active:scale-95"
               title="تثبيت التطبيق على الشاشة الرئيسية للهاتف"
             >
               <Smartphone className="w-4 h-4 text-indigo-600" />
-              <span className="hidden md:inline">تثبيت التطبيق</span>
-              <span className="md:hidden">تثبيت</span>
+              <span>تثبيت التطبيق</span>
             </button>
 
             {/* Add Facility Button */}
             <button
               id="header-add-entity-btn"
               onClick={onOpenAddModal}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm transition-all shadow-xs group active:scale-95"
+              className="flex items-center justify-center gap-1 h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm transition-all shadow-xs group active:scale-95 shrink-0"
               title="إضافة طبيب، صيدلية أو مستشفى"
             >
               <Plus className="w-4 h-4 text-white group-hover:rotate-90 transition-transform" />
               <span className="hidden sm:inline">إضافة مرفق</span>
-              <span className="sm:hidden">إضافة</span>
             </button>
 
+            {/* Garde status pill on large screens */}
             {onDutyCountToday > 0 && (
               <button
                 id="header-garde-badge"
@@ -111,35 +122,40 @@ export const Header: React.FC<HeaderProps> = ({
                 className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/90 text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95"
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>المناوبة اليوم: <strong>{onDutyCountToday} صيدليات</strong></span>
+                <span>المناوبة: <strong>{onDutyCountToday} صيدليات</strong></span>
               </button>
             )}
 
+            {/* Emergency Button */}
             <button
               id="emergency-modal-trigger"
               onClick={onOpenEmergencyModal}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-extrabold text-xs sm:text-sm transition-all shadow-2xs group active:scale-95"
+              className="flex items-center justify-center gap-1 h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-xs sm:text-sm transition-all shadow-2xs group active:scale-95 shrink-0"
+              title="أرقام الطوارئ والإسعاف"
             >
               <ShieldAlert className="w-4 h-4 text-red-600 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">أرقام الطوارئ</span>
-              <span className="sm:hidden">الطوارئ</span>
+              <span className="text-xs font-black">طوارئ</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs Bar (Visible on desktop & scrollable) */}
-      <div className="bg-slate-50/90 border-t border-slate-200/80 overflow-x-auto scrollbar-none">
+      {/* Navigation Tabs Bar (Visible ONLY on md+ desktop screens; hidden on mobile in favor of the bottom bar) */}
+      <div className="hidden md:block bg-slate-50/95 border-t border-slate-200/80 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <nav className="flex space-x-reverse space-x-1 sm:space-x-2 py-2">
+          <div 
+            ref={tabsContainerRef}
+            onScroll={checkScroll}
+            className="flex items-center space-x-reverse space-x-2 py-2 overflow-x-auto scrollbar-none"
+          >
             {/* الرئيسية */}
             <button
               id="tab-btn-home"
               onClick={() => setActiveTab('home')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
                 activeTab === 'home'
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/70'
               }`}
             >
               <Home className="w-4 h-4" />
@@ -150,10 +166,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="tab-btn-map"
               onClick={() => setActiveTab('map')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
                 activeTab === 'map'
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-blue-700 bg-blue-50/80 hover:bg-blue-100 border border-blue-200/70'
+                  : 'text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/70'
               }`}
             >
               <Navigation className="w-4 h-4 text-blue-600" />
@@ -164,16 +180,16 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="tab-btn-garde"
               onClick={() => setActiveTab('garde')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap relative ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap relative shrink-0 active:scale-95 ${
                 activeTab === 'garde'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80'
+                  : 'text-emerald-800 bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-200/80'
               }`}
             >
               <Clock className="w-4 h-4 text-emerald-600" />
-              <span>الصيدليات المناوبة (Garde)</span>
+              <span>الصيدليات المناوبة</span>
               {onDutyCountToday > 0 && (
-                <span className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                <span className={`text-[11px] font-black px-1.5 py-0.2 rounded-md ${
                   activeTab === 'garde' ? 'bg-white text-emerald-800' : 'bg-emerald-600 text-white'
                 }`}>
                   {onDutyCountToday}
@@ -185,10 +201,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="tab-btn-pharmacies"
               onClick={() => setActiveTab('pharmacies')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
                 activeTab === 'pharmacies'
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/70'
               }`}
             >
               <Pill className="w-4 h-4" />
@@ -199,10 +215,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="tab-btn-doctors"
               onClick={() => setActiveTab('doctors')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
                 activeTab === 'doctors'
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/70'
               }`}
             >
               <Stethoscope className="w-4 h-4" />
@@ -213,35 +229,21 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="tab-btn-hospitals"
               onClick={() => setActiveTab('hospitals')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 active:scale-95 ${
                 activeTab === 'hospitals'
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/70'
               }`}
             >
               <Building2 className="w-4 h-4" />
-              <span>المستشفيات والمرافق العمومية</span>
+              <span>المستشفيات والمرافق</span>
             </button>
-
-            {/* لوحة الإدارة */}
-            <button
-              id="tab-btn-admin"
-              onClick={() => setActiveTab('admin')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap mr-auto ${
-                activeTab === 'admin'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-700 bg-slate-200/70 hover:bg-slate-300/80 border border-slate-300/60'
-              }`}
-              title="لوحة تحكم المشرف وإدارة البيانات"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-500" />
-              <span>لوحة التحكم</span>
-            </button>
-          </nav>
+          </div>
         </div>
       </div>
     </header>
   );
 };
+
 
 

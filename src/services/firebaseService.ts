@@ -9,7 +9,14 @@ import {
   writeBatch,
   getDoc
 } from 'firebase/firestore';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  User 
+} from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from '../lib/firebase';
 import { HealthEntity } from '../types';
 import { HEALTH_DATA } from '../data/mockData';
@@ -18,6 +25,7 @@ const ENTITIES_COLLECTION = 'entities';
 
 /**
  * Real-time subscription to all Health Entities in Firestore
+ * Automatically seeds the database from HEALTH_DATA if empty.
  */
 export function subscribeToHealthEntities(
   onSuccess: (entities: HealthEntity[]) => void,
@@ -26,7 +34,18 @@ export function subscribeToHealthEntities(
   const colRef = collection(db, ENTITIES_COLLECTION);
   return onSnapshot(
     colRef,
-    (snapshot) => {
+    async (snapshot) => {
+      if (snapshot.empty) {
+        // Auto-seed initial health entities to Firestore
+        try {
+          await syncInitialDataToFirestore();
+          // The onSnapshot will re-fire with the new documents
+          return;
+        } catch (e) {
+          console.warn('Initial seeding attempt failed or will retry on next snapshot:', e);
+        }
+      }
+
       const entities: HealthEntity[] = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -47,6 +66,11 @@ export function subscribeToHealthEntities(
           workingHours: data.workingHours || undefined,
           isEmergency: data.isEmergency || false,
           notes: data.notes || undefined,
+          status: data.status || 'approved', // Default legacy or initial to approved
+          submittedBy: data.submittedBy || undefined,
+          submittedAt: data.submittedAt || undefined,
+          createdAt: data.createdAt || undefined,
+          updatedAt: data.updatedAt || undefined,
         });
       });
       onSuccess(entities);
@@ -71,7 +95,8 @@ export async function addEntityToFirestore(entity: HealthEntity): Promise<void> 
     commune: entity.commune,
     address: entity.address,
     phone: entity.phone,
-    createdAt: new Date().toISOString(),
+    status: entity.status || 'pending', // Default new user submissions to pending
+    createdAt: entity.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
@@ -85,6 +110,8 @@ export async function addEntityToFirestore(entity: HealthEntity): Promise<void> 
   if (entity.workingHours) payload.workingHours = entity.workingHours;
   if (entity.isEmergency !== undefined) payload.isEmergency = entity.isEmergency;
   if (entity.notes) payload.notes = entity.notes;
+  if (entity.submittedBy) payload.submittedBy = entity.submittedBy;
+  if (entity.submittedAt) payload.submittedAt = entity.submittedAt;
 
   try {
     await setDoc(docRef, payload);
@@ -105,6 +132,7 @@ export async function updateEntityInFirestore(entity: HealthEntity): Promise<voi
     commune: entity.commune,
     address: entity.address,
     phone: entity.phone,
+    status: entity.status || 'approved',
     updatedAt: new Date().toISOString(),
   };
 
@@ -118,11 +146,28 @@ export async function updateEntityInFirestore(entity: HealthEntity): Promise<voi
   if (entity.workingHours !== undefined) payload.workingHours = entity.workingHours || '';
   if (entity.isEmergency !== undefined) payload.isEmergency = Boolean(entity.isEmergency);
   if (entity.notes !== undefined) payload.notes = entity.notes || '';
+  if (entity.submittedBy !== undefined) payload.submittedBy = entity.submittedBy;
+  if (entity.submittedAt !== undefined) payload.submittedAt = entity.submittedAt;
 
   try {
     await setDoc(docRef, payload, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `${ENTITIES_COLLECTION}/${entity.id}`);
+  }
+}
+
+/**
+ * Approve a pending entity
+ */
+export async function approveEntityInFirestore(entityId: string): Promise<void> {
+  const docRef = doc(db, ENTITIES_COLLECTION, entityId);
+  try {
+    await updateDoc(docRef, {
+      status: 'approved',
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `${ENTITIES_COLLECTION}/${entityId}`);
   }
 }
 
@@ -154,6 +199,7 @@ export async function syncInitialDataToFirestore(customEntities?: HealthEntity[]
       commune: entity.commune,
       address: entity.address,
       phone: entity.phone,
+      status: 'approved',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -185,6 +231,16 @@ export async function syncInitialDataToFirestore(customEntities?: HealthEntity[]
 /**
  * Auth Helpers
  */
+export async function loginWithEmail(email: string, pass: string): Promise<User> {
+  const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+  return userCredential.user;
+}
+
+export async function registerAdminWithEmail(email: string, pass: string): Promise<User> {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+  return userCredential.user;
+}
+
 export async function loginWithGoogle(): Promise<User | null> {
   try {
     const result = await signInWithPopup(auth, googleProvider);

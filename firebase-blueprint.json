@@ -80,6 +80,20 @@
           "description": "Additional public notes or instructions",
           "maxLength": 500
         },
+        "status": {
+          "type": "string",
+          "description": "Approval status of the health entity (approved or pending review)",
+          "enum": ["approved", "pending"]
+        },
+        "submittedBy": {
+          "type": "string",
+          "description": "User or email who submitted the entity",
+          "maxLength": 150
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "Timestamp of submission"
+        },
         "createdAt": {
           "type": "string",
           "description": "ISO timestamp of creation"

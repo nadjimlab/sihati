@@ -121,6 +121,9 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
       garde_days: type === 'صيدلية' && isOnDutyToday ? [todayDayOfWeek] : undefined,
       garde_shift: type === 'صيدلية' && isOnDutyToday ? 'ليلية (20:00 - 08:00)' : undefined,
       notes: notes.trim() ? notes.trim() : undefined,
+      status: 'pending',
+      submittedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     onAddEntity(newEntity);
@@ -135,7 +138,7 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
       setPhone('');
       setSecondaryPhone('');
       setNotes('');
-    }, 900);
+    }, 1800);
   };
 
   return (
@@ -153,7 +156,7 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold">إضافة مرفق طبي جديد</h2>
-              <p className="text-xs text-blue-100">إضافة طبيب، صيدلية أو مرفق استشفائي مع الإحداثيات</p>
+              <p className="text-xs text-blue-100">اقتراح إضافة طبيب، صيدلية أو مرفق استشفائي للمراجعة</p>
             </div>
           </div>
           <button
@@ -175,9 +178,12 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
           )}
 
           {successMessage && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span className="font-bold">تمت إضافة المرفق الطبي بنجاح وحفظه في الدليل والخريطة!</span>
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2.5 animate-in fade-in">
+              <Check className="w-5 h-5 shrink-0 text-emerald-600" />
+              <div>
+                <span className="font-bold block">تم إرسال طلب إضافة المرفق الطبي بنجاح!</span>
+                <span className="text-[11px] text-emerald-700">سيتم مراجعة الطلب وتأكيده من قبل المشرف لنشره في الدليل.</span>
+              </div>
             </div>
           )}
 

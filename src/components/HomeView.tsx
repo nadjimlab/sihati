@@ -81,88 +81,109 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="space-y-10 pb-16">
-      {/* 1. Hero Section with Professional Design & Live Stats */}
-      <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 sm:p-10 shadow-xl border border-slate-800">
+      {/* 1. Hero Section with Professional Design & Mobile-First Quick Access */}
+      <section className="relative overflow-hidden bg-slate-900 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-10 shadow-xl border border-slate-800">
         {/* Subtle decorative glow elements */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-72 sm:w-96 h-72 sm:h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-72 sm:w-96 h-72 sm:h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
+        <div className="relative z-10 max-w-4xl mx-auto space-y-4 sm:space-y-6">
           
-          {/* Badge indicator */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/90 text-xs font-bold text-blue-300 border border-slate-700 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>المنصة الصحية المعتمدة لولاية الوادي (39)</span>
+          {/* Top Status Badges Row */}
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2">
+            <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-800/90 text-[11px] sm:text-xs font-bold text-blue-300 border border-slate-700 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>المنصة الصحية المعتمدة لولاية الوادي (39)</span>
+            </div>
+
+            {/* Quick Emergency Dial Pill for Phones */}
+            <div className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-red-950/60 border border-red-800/60 text-red-300 text-[11px] sm:text-xs font-bold">
+              <PhoneCall className="w-3.5 h-3.5 text-red-400 animate-bounce" />
+              <span>طوارئ:</span>
+              <a href="tel:14" className="hover:text-white underline font-black">14</a>
+              <span className="text-red-600">•</span>
+              <a href="tel:17" className="hover:text-white underline font-black">17</a>
+              <span className="text-red-600">•</span>
+              <a href="tel:1055" className="hover:text-white underline font-black">1055</a>
+            </div>
           </div>
 
           {/* Main Title & Subtitle */}
-          <div className="space-y-3">
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              دليلك الطبي الشامل <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-400 to-teal-300">والأقرب إليك</span>
+          <div className="text-center space-y-2 sm:space-y-3">
+            <h1 className="text-xl sm:text-3xl lg:text-5xl font-black text-white tracking-tight leading-snug sm:leading-tight">
+              دليلك الطبي الشامل <span className="text-transparent bg-clip-text bg-gradient-to-l from-blue-400 to-teal-300">بولاية الوادي</span>
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-              تصفح بسهولة جدول الصيدليات المناوبة ليلاً ونهاراً، اعثر على أمهر الأطباء بمختلف التخصصات، واكتشف أقرب المستشفيات والعيادات مع خاصية المسار والاتجاهات.
+            <p className="text-xs sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+              جدول الصيدليات المناوبة ليلاً ونهاراً، أفضل الأطباء بمختلف التخصصات، والمستشفيات والعيادات مع خاصية المسار والاتجاهات.
             </p>
           </div>
 
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 max-w-3xl mx-auto pt-2">
+          {/* Mobile-Optimized Quick Action & Category Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto pt-1">
+            {/* Garde Card */}
             <div 
+              id="home-hero-garde-btn"
               onClick={() => setActiveTab('garde')}
-              className="bg-slate-800/80 hover:bg-slate-800 border border-emerald-500/40 p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 text-right flex items-center gap-3 group"
+              className="bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/50 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                <Clock className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <span className="text-xs text-slate-400 font-medium block">مناوبة اليوم</span>
-                <span className="text-lg font-black text-emerald-300">{todayOnDutyPharmacies.length} صيدلية</span>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-emerald-300/80 font-bold block truncate">صيدليات المناوبة</span>
+                <span className="text-sm sm:text-base font-black text-emerald-300">{todayOnDutyPharmacies.length} مناوبة</span>
               </div>
             </div>
 
+            {/* Pharmacies Card */}
             <div 
+              id="home-hero-pharmacies-btn"
               onClick={() => setActiveTab('pharmacies')}
-              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 text-right flex items-center gap-3 group"
+              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
             >
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                <Pill className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <Pill className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <span className="text-xs text-slate-400 font-medium block">إجمالي الصيدليات</span>
-                <span className="text-lg font-black text-white">{pharmacyCount} صيدلية</span>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium block truncate">كل الصيدليات</span>
+                <span className="text-sm sm:text-base font-black text-white">{pharmacyCount} صيدلية</span>
               </div>
             </div>
 
+            {/* Doctors Card */}
             <div 
+              id="home-hero-doctors-btn"
               onClick={() => setActiveTab('doctors')}
-              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 text-right flex items-center gap-3 group"
+              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
             >
-              <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-colors">
-                <Stethoscope className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-colors">
+                <Stethoscope className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <span className="text-xs text-slate-400 font-medium block">الأطباء والعيادات</span>
-                <span className="text-lg font-black text-white">{doctorCount} مختص</span>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium block truncate">الأطباء والعيادات</span>
+                <span className="text-sm sm:text-base font-black text-white">{doctorCount} طبيب</span>
               </div>
             </div>
 
+            {/* Hospitals & Facilities Card */}
             <div 
+              id="home-hero-hospitals-btn"
               onClick={() => setActiveTab('hospitals')}
-              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 text-right flex items-center gap-3 group"
+              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-                <Building2 className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <span className="text-xs text-slate-400 font-medium block">المستشفيات والعيادات</span>
-                <span className="text-lg font-black text-white">{facilityCount} مرافق</span>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium block truncate">المستشفيات 24/24</span>
+                <span className="text-sm sm:text-base font-black text-white">{facilityCount} مرافق</span>
               </div>
             </div>
           </div>
 
           {/* Advanced Filter Component Container */}
-          <div className="pt-2 text-right">
-            <div className="bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/60">
+          <div className="pt-1 sm:pt-2 text-right">
+            <div className="bg-white/95 backdrop-blur-md p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/60">
               <AdvancedFilterBar
                 filters={filters}
                 onFilterChange={setFilters}
@@ -175,16 +196,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Municipality Filter Tags */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs">
-            <span className="text-slate-400 font-bold ml-1">بلديات بارزة:</span>
-            {['الوادي', 'قمار', 'البياضة', 'المقرن', 'حاسي خليفة', 'الدبيلة', 'الرباح', 'كوينين', 'الرقيبة'].map((commune) => {
+          {/* Quick Municipality Filter Tags (Horizontal swipeable on mobile) */}
+          <div className="flex items-center gap-1.5 pt-1 overflow-x-auto scrollbar-none pb-1 text-xs">
+            <span className="text-slate-400 font-bold ml-1 shrink-0 text-[11px] sm:text-xs">البلديات:</span>
+            {['الوادي', 'قمار', 'البياضة', 'المقرن', 'حاسي خليفة', 'الدبيلة', 'الرباح', 'كوينين', 'الرقيبة', 'جامعة', 'المغير', 'حاسـي عبد الله'].map((commune) => {
               const isSelected = filters.commune === commune;
               return (
                 <button
                   key={commune}
                   onClick={() => handleCommuneQuickFilter(commune)}
-                  className={`px-3 py-1 rounded-xl font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-xl font-bold transition-all shrink-0 active:scale-95 text-[11px] sm:text-xs ${
                     isSelected
                       ? 'bg-blue-600 text-white shadow-xs scale-105'
                       : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'

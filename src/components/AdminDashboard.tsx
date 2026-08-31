@@ -42,13 +42,17 @@ import {
   AlertCircle,
   Cloud,
   CloudCheck,
-  CloudUpload
+  CloudUpload,
+  UserCheck,
+  CheckCircle,
+  Inbox
 } from 'lucide-react';
 import { 
   syncInitialDataToFirestore, 
   loginWithGoogle, 
   logoutUser, 
-  subscribeToAuth 
+  subscribeToAuth,
+  approveEntityInFirestore
 } from '../services/firebaseService';
 import { User } from 'firebase/auth';
 
@@ -59,11 +63,11 @@ interface AdminDashboardProps {
   onDeleteEntity: (id: string) => void;
   onEditEntity: (entity: HealthEntity) => void;
   onResetToDefaults: () => void;
-  setActiveTab: (tab: ActiveTab) => void;
+  setActiveTab?: (tab: ActiveTab) => void;
   onViewOnMap?: (entity: HealthEntity) => void;
 }
 
-type AdminSubTab = 'overview' | 'entities' | 'garde' | 'backup' | 'settings';
+type AdminSubTab = 'overview' | 'pending' | 'entities' | 'garde' | 'backup' | 'settings';
 
 const ADMIN_STORAGE_PASS_KEY = 'eloued_health_admin_password';
 const ADMIN_SESSION_AUTH_KEY = 'eloued_health_admin_auth';
@@ -480,16 +484,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   }, [entities, searchQuery, typeFilter, communeFilter, statusFilter]);
 
+  // Pending Submissions Filter
+  const pendingEntities = useMemo(() => {
+    return entities.filter(e => e.status === 'pending');
+  }, [entities]);
+
+  const handleApproveEntity = async (entity: HealthEntity) => {
+    const updated: HealthEntity = {
+      ...entity,
+      status: 'approved',
+      updatedAt: new Date().toISOString(),
+    };
+    onEditEntity(updated);
+    try {
+      await approveEntityInFirestore(entity.id);
+    } catch (err) {
+      console.warn('Approve sync note:', err);
+    }
+    showToast(`تمت الموافقة على "${entity.name}" وتفعيلها في الدليل والخريطة بنجاح!`, 'success');
+  };
+
   // KPIs Calculations
   const stats = useMemo(() => {
     const total = entities.length;
-    const pharmaciesCount = entities.filter(e => e.type === 'صيدلية').length;
-    const doctorsCount = entities.filter(e => e.type === 'طبيب').length;
-    const hospitalsCount = entities.filter(e => e.type === 'مستشفى' || e.type === 'عيادة').length;
+    const pendingCount = entities.filter(e => e.status === 'pending').length;
+    const approvedEntities = entities.filter(e => e.status !== 'pending');
+    const pharmaciesCount = approvedEntities.filter(e => e.type === 'صيدلية').length;
+    const doctorsCount = approvedEntities.filter(e => e.type === 'طبيب').length;
+    const hospitalsCount = approvedEntities.filter(e => e.type === 'مستشفى' || e.type === 'عيادة').length;
     const customCount = entities.filter(e => e.id.startsWith('custom-')).length;
 
     const todayDay = new Date().getDay();
-    const todayGardeCount = entities.filter(e => e.type === 'صيدلية' && e.garde_days?.includes(todayDay)).length;
+    const todayGardeCount = approvedEntities.filter(e => e.type === 'صيدلية' && e.garde_days?.includes(todayDay)).length;
 
     const withGpsCount = entities.filter(e => e.latitude && e.longitude).length;
     const gpsCoveragePercent = total > 0 ? Math.round((withGpsCount / total) * 100) : 0;
@@ -506,6 +532,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     return {
       total,
+      pendingCount,
       pharmaciesCount,
       doctorsCount,
       hospitalsCount,
@@ -515,6 +542,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       topCommunes,
     };
   }, [entities]);
+
+  const handleGoHome = () => {
+    if (setActiveTab) {
+      setActiveTab('home');
+    }
+    // Also navigate if using react-router-dom or window location
+    if (window.location.pathname.startsWith('/admin')) {
+      window.location.href = '/';
+    }
+  };
 
   // -------------------------------------------------------------
   // RENDER: LOGIN FORM (If not authenticated)
@@ -615,7 +652,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Return Back Button */}
           <div className="pt-2 text-center border-t border-slate-100">
             <button
-              onClick={() => setActiveTab('home')}
+              onClick={handleGoHome}
               className="text-xs text-slate-500 hover:text-slate-800 font-bold inline-flex items-center gap-1.5"
             >
               <ArrowRight className="w-3.5 h-3.5" />
@@ -693,7 +730,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <button
             id="admin-public-view-btn"
-            onClick={() => setActiveTab('home')}
+            onClick={handleGoHome}
             className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 border border-white/15 transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
@@ -724,6 +761,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         >
           <BarChart3 className="w-4 h-4" />
           <span>الإحصائيات والتحليلات</span>
+        </button>
+
+        <button
+          id="admin-tab-pending"
+          onClick={() => setSubTab('pending')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap relative ${
+            subTab === 'pending'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Clock className="w-4 h-4 text-amber-500" />
+          <span>الطلبات المعلقة</span>
+          {pendingEntities.length > 0 && (
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+              subTab === 'pending' ? 'bg-white text-amber-700' : 'bg-amber-500 text-white animate-pulse'
+            }`}>
+              {pendingEntities.length}
+            </span>
+          )}
         </button>
 
         <button
@@ -778,6 +835,175 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <span>إعدادات الأمان</span>
         </button>
       </div>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* TAB 0: PENDING SUBMISSIONS & APPROVALS */}
+      {/* ----------------------------------------------------------------- */}
+      {subTab === 'pending' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/80 shrink-0">
+                  <Inbox className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900">
+                      الطلبات المعلقة وقيد المراجعة
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-200">
+                      {pendingEntities.length} طلب بانتظار التأكيد
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    المنشآت الطبية المقترحة من زوار الموقع للمراجعة والموافقة قبل نشرها في الدليل والخريطة
+                  </p>
+                </div>
+              </div>
+
+              {pendingEntities.length > 1 && (
+                <button
+                  onClick={async () => {
+                    for (const item of pendingEntities) {
+                      await handleApproveEntity(item);
+                    }
+                    showToast('تمت الموافقة على جميع الطلبات المعلقة بنجاح!', 'success');
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>الموافقة على الكل ({pendingEntities.length})</span>
+                </button>
+              )}
+            </div>
+
+            {/* Pending List Grid */}
+            {pendingEntities.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingEntities.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-5 rounded-2xl bg-amber-50/40 border border-amber-200/80 shadow-xs space-y-4 flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-xl bg-white border border-amber-200 shadow-2xs text-amber-700">
+                            {item.type === 'صيدلية' ? (
+                              <Pill className="w-5 h-5" />
+                            ) : item.type === 'طبيب' ? (
+                              <Stethoscope className="w-5 h-5" />
+                            ) : (
+                              <Building2 className="w-5 h-5" />
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                              {item.type} {item.specialty ? `• ${item.specialty}` : ''}
+                            </span>
+                            <h3 className="text-base font-black text-slate-900 mt-1">
+                              {item.name}
+                            </h3>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 border border-amber-300/60 px-2 py-0.5 rounded-md shrink-0">
+                          قيد المراجعة
+                        </span>
+                      </div>
+
+                      {/* Details */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 pt-1">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>بلدية {item.commune} - {item.address}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <a href={`tel:${item.phone}`} className="font-mono dir-ltr font-bold text-blue-600 hover:underline">
+                            {item.phone}
+                          </a>
+                        </div>
+
+                        {item.workingHours && (
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>ساعات العمل: {item.workingHours}</span>
+                          </div>
+                        )}
+
+                        {item.latitude && item.longitude && (
+                          <div className="flex items-center gap-1.5 text-emerald-700">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>إحداثيات GPS متوفرة</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {item.notes && (
+                        <div className="p-2.5 rounded-xl bg-white border border-amber-200/60 text-xs text-slate-600 space-y-0.5">
+                          <span className="font-bold text-slate-700 block">ملاحظات مرسلة:</span>
+                          <p>{item.notes}</p>
+                        </div>
+                      )}
+
+                      {item.submittedAt && (
+                        <span className="text-[10px] text-slate-400 block">
+                          تاريخ الإرسال: {new Date(item.submittedAt).toLocaleDateString('ar-DZ')} {new Date(item.submittedAt).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-3 border-t border-amber-200/80 flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setDeletingId(item.id)}
+                        className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all flex items-center gap-1"
+                        title="رفض وحذف الطلب"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>رفض وحذف</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1"
+                        title="تعديل البيانات قبل النشر"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>تعديل</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleApproveEntity(item)}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                      >
+                        <Check className="w-4 h-4 stroke-[2.5]" />
+                        <span>موافقة ونشر في الدليل</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-slate-800">لا توجد أي طلبات معلقة حالياً</h3>
+                  <p className="text-xs text-slate-500">
+                    جميع المنشآت الطبية المضافة تمت مراجعتها وهي منشورة ومعتمدة في الدليل والخريطة.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ----------------------------------------------------------------- */}
       {/* TAB 1: OVERVIEW & ANALYTICS */}

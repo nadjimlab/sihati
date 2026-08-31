@@ -19,6 +19,11 @@ export interface HealthEntity {
   workingHours?: string;
   isEmergency?: boolean;
   notes?: string;
+  status?: 'approved' | 'pending';
+  submittedBy?: string;
+  submittedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type ActiveTab = 'home' | 'map' | 'pharmacies' | 'garde' | 'doctors' | 'hospitals' | 'admin';
