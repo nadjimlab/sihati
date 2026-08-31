@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { HealthEntity, HealthEntityType, ActiveTab, ModeratorUser, ModeratorPermission, AdminSession } from '../types';
+import { HealthEntity, HealthEntityType, ActiveTab, ModeratorUser, ModeratorPermission, AdminSession, EditSuggestion, EditableEntityField } from '../types';
 import { COMMUNES, SPECIALTIES } from '../data/mockData';
 import { 
   ShieldCheck, 
@@ -49,14 +49,19 @@ import {
   Inbox,
   TrendingUp,
   Users,
-  User
+  User,
+  ArrowLeftRight
 } from 'lucide-react';
 import { 
   syncInitialDataToFirestore, 
   loginWithGoogle, 
   logoutUser, 
   subscribeToAuth,
-  approveEntityInFirestore
+  approveEntityInFirestore,
+  subscribeToEditSuggestions,
+  approveEditSuggestionInFirestore,
+  rejectEditSuggestionInFirestore,
+  deleteEditSuggestionFromFirestore
 } from '../services/firebaseService';
 import { User as FirebaseUser } from 'firebase/auth';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
@@ -81,7 +86,34 @@ interface AdminDashboardProps {
   onViewOnMap?: (entity: HealthEntity) => void;
 }
 
-type AdminSubTab = 'overview' | 'analytics' | 'pending' | 'entities' | 'garde' | 'moderators' | 'backup' | 'settings';
+type AdminSubTab = 'overview' | 'analytics' | 'pending' | 'suggestions' | 'entities' | 'garde' | 'moderators' | 'backup' | 'settings';
+
+// Human-readable Arabic labels for entity fields, used to render the edit-suggestion diff
+const FIELD_LABELS: Record<EditableEntityField, string> = {
+  name: 'الاسم',
+  specialty: 'التخصص',
+  commune: 'البلدية',
+  address: 'العنوان',
+  phone: 'الهاتف الرئيسي',
+  secondaryPhone: 'الهاتف الإضافي',
+  workingHours: 'ساعات العمل',
+  isEmergency: 'استعجالات 24/24',
+  garde_days: 'أيام المناوبة',
+  garde_shift: 'فترة المناوبة',
+  notes: 'ملاحظات',
+  latitude: 'خط العرض',
+  longitude: 'خط الطول',
+};
+
+const formatFieldValue = (field: EditableEntityField, value: any): string => {
+  if (value === undefined || value === null || value === '') return '—';
+  if (field === 'isEmergency') return value ? 'نعم' : 'لا';
+  if (field === 'garde_days' && Array.isArray(value)) {
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    return value.length > 0 ? value.map((d: number) => days[d]).join('، ') : '—';
+  }
+  return String(value);
+};
 
 const ADMIN_STORAGE_PASS_KEY = 'eloued_health_admin_password';
 const ADMIN_SESSION_AUTH_KEY = 'eloued_health_admin_auth';
@@ -169,6 +201,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Admin Active Sub-Tab
   const [subTab, setSubTab] = useState<AdminSubTab>('overview');
+
+  // Visitor-submitted edit suggestions (real-time from Firestore)
+  const [editSuggestions, setEditSuggestions] = useState<EditSuggestion[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToEditSuggestions(
+      (suggestions) => setEditSuggestions(suggestions),
+      (error) => console.warn('Edit suggestions subscription error:', error)
+    );
+    return () => unsub();
+  }, []);
+
+  const pendingEditSuggestions = useMemo(
+    () => editSuggestions.filter((s) => s.status === 'pending'),
+    [editSuggestions]
+  );
 
   // Notification Toast inside Admin
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -578,6 +625,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast(`تمت الموافقة على "${entity.name}" وتفعيلها في الدليل والخريطة بنجاح!`, 'success');
   };
 
+  // Reviewer display name used when approving/rejecting edit suggestions
+  const reviewerDisplayName = adminSession?.name || currentUser?.displayName || currentUser?.email || 'المشرف';
+
+  const handleApproveEditSuggestion = async (suggestion: EditSuggestion) => {
+    if (!canEdit) {
+      showToast('عذراً، ليس لديك صلاحية تعديل المنشآت!', 'error');
+      return;
+    }
+    const targetEntity = entities.find((e) => e.id === suggestion.entityId);
+    if (!targetEntity) {
+      showToast('تعذر العثور على المنشأة الأصلية، ربما تم حذفها.', 'error');
+      return;
+    }
+
+    // Apply the suggested changes locally so the UI updates instantly
+    const updatedEntity: HealthEntity = {
+      ...targetEntity,
+      ...suggestion.changes,
+      updatedAt: new Date().toISOString(),
+    };
+    onEditEntity(updatedEntity);
+
+    try {
+      await approveEditSuggestionInFirestore(suggestion, reviewerDisplayName);
+    } catch (err) {
+      console.warn('Approve edit suggestion sync note:', err);
+    }
+    showToast(`تمت الموافقة على تعديل "${suggestion.entityName}" وتحديث بياناته في الدليل!`, 'success');
+  };
+
+  const handleRejectEditSuggestion = async (suggestion: EditSuggestion) => {
+    if (!canEdit) {
+      showToast('عذراً، ليس لديك صلاحية مراجعة اقتراحات التعديل!', 'error');
+      return;
+    }
+    try {
+      await rejectEditSuggestionInFirestore(suggestion.id, reviewerDisplayName);
+      showToast(`تم رفض اقتراح التعديل على "${suggestion.entityName}".`, 'info');
+    } catch (err) {
+      console.warn('Reject edit suggestion sync note:', err);
+      showToast('حدث خطأ أثناء رفض الاقتراح.', 'error');
+    }
+  };
+
   // KPIs Calculations
   const stats = useMemo(() => {
     const total = entities.length;
@@ -969,6 +1060,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </button>
 
         <button
+          id="admin-tab-suggestions"
+          onClick={() => setSubTab('suggestions')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap relative ${
+            subTab === 'suggestions'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <ArrowLeftRight className="w-4 h-4 text-indigo-500" />
+          <span>اقتراحات التعديل</span>
+          {pendingEditSuggestions.length > 0 && (
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+              subTab === 'suggestions' ? 'bg-white text-indigo-700' : 'bg-indigo-500 text-white animate-pulse'
+            }`}>
+              {pendingEditSuggestions.length}
+            </span>
+          )}
+        </button>
+
+        <button
           id="admin-tab-entities"
           onClick={() => setSubTab('entities')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
@@ -1199,6 +1310,159 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <h3 className="text-base font-bold text-slate-800">لا توجد أي طلبات معلقة حالياً</h3>
                   <p className="text-xs text-slate-500">
                     جميع المنشآت الطبية المضافة تمت مراجعتها وهي منشورة ومعتمدة في الدليل والخريطة.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* TAB: VISITOR EDIT SUGGESTIONS */}
+      {/* ----------------------------------------------------------------- */}
+      {subTab === 'suggestions' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200/80 shrink-0">
+                  <ArrowLeftRight className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900">
+                      اقتراحات تعديل من زوار الموقع
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-indigo-100 text-indigo-900 border border-indigo-200">
+                      {pendingEditSuggestions.length} اقتراح بانتظار المراجعة
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    تصحيحات مقترحة من الزوار على معلومات منشآت موجودة بالفعل في الدليل. لن يتم تحديث أي بيانات عامة إلا بعد موافقتك.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {pendingEditSuggestions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingEditSuggestions.map((suggestion) => {
+                  const changedFields = Object.keys(suggestion.changes) as EditableEntityField[];
+                  const entityStillExists = entities.some((e) => e.id === suggestion.entityId);
+                  return (
+                    <div
+                      key={suggestion.id}
+                      className="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-200/80 shadow-xs space-y-4 flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 rounded-xl bg-white border border-indigo-200 shadow-2xs text-indigo-700">
+                              {suggestion.entityType === 'صيدلية' ? (
+                                <Pill className="w-5 h-5" />
+                              ) : suggestion.entityType === 'طبيب' ? (
+                                <Stethoscope className="w-5 h-5" />
+                              ) : (
+                                <Building2 className="w-5 h-5" />
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-extrabold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-md">
+                                {suggestion.entityType}
+                              </span>
+                              <h3 className="text-base font-black text-slate-900 mt-1">
+                                {suggestion.entityName}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/80 border border-indigo-300/60 px-2 py-0.5 rounded-md shrink-0">
+                            قيد المراجعة
+                          </span>
+                        </div>
+
+                        {!entityStillExists && (
+                          <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            <span>هذه المنشأة لم تعد موجودة في الدليل (ربما تم حذفها).</span>
+                          </div>
+                        )}
+
+                        {/* Diff of changed fields */}
+                        <div className="space-y-1.5">
+                          {changedFields.map((field) => (
+                            <div
+                              key={field}
+                              className="p-2.5 rounded-xl bg-white border border-indigo-100 text-xs space-y-1"
+                            >
+                              <span className="font-bold text-slate-700 block">{FIELD_LABELS[field]}</span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-md line-through decoration-red-400">
+                                  {formatFieldValue(field, suggestion.originalValues[field])}
+                                </span>
+                                <ArrowLeftRight className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md font-bold">
+                                  {formatFieldValue(field, suggestion.changes[field])}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {suggestion.reporterNote && (
+                          <div className="p-2.5 rounded-xl bg-white border border-indigo-200/60 text-xs text-slate-600 space-y-0.5">
+                            <span className="font-bold text-slate-700 block">ملاحظة الزائر:</span>
+                            <p>{suggestion.reporterNote}</p>
+                          </div>
+                        )}
+
+                        {suggestion.reporterContact && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>للتواصل: {suggestion.reporterContact}</span>
+                          </div>
+                        )}
+
+                        <span className="text-[10px] text-slate-400 block">
+                          تاريخ الإرسال: {new Date(suggestion.submittedAt).toLocaleDateString('ar-DZ')} {new Date(suggestion.submittedAt).toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="pt-3 border-t border-indigo-200/80 flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleRejectEditSuggestion(suggestion)}
+                          className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-all flex items-center gap-1"
+                          title="رفض الاقتراح دون تطبيق التغييرات"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span>رفض</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleApproveEditSuggestion(suggestion)}
+                          disabled={!entityStillExists}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-extrabold shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                        >
+                          <Check className="w-4 h-4 stroke-[2.5]" />
+                          <span>موافقة وتحديث البيانات</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-slate-800">لا توجد أي اقتراحات تعديل معلقة حالياً</h3>
+                  <p className="text-xs text-slate-500">
+                    جميع اقتراحات التصحيح المرسلة من الزوار تمت مراجعتها.
                   </p>
                 </div>
               </div>

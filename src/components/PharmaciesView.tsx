@@ -10,6 +10,7 @@ interface PharmaciesViewProps {
   todayOnDutyIds: string[];
   onOpenAddModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
+  onSuggestEdit?: (entity: HealthEntity) => void;
 }
 
 export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
@@ -17,6 +18,7 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
   todayOnDutyIds,
   onOpenAddModal,
   onViewOnMap,
+  onSuggestEdit,
 }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
 
@@ -90,6 +92,7 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
               item={pharmacy}
               isOnDuty={todayOnDutyIds.includes(pharmacy.id)}
               onViewOnMap={onViewOnMap}
+              onSuggestEdit={onSuggestEdit}
             />
           ))}
         </div>

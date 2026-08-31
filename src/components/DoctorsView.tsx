@@ -9,9 +9,10 @@ interface DoctorsViewProps {
   doctors: HealthEntity[];
   onOpenAddModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
+  onSuggestEdit?: (entity: HealthEntity) => void;
 }
 
-export const DoctorsView: React.FC<DoctorsViewProps> = ({ doctors, onOpenAddModal, onViewOnMap }) => {
+export const DoctorsView: React.FC<DoctorsViewProps> = ({ doctors, onOpenAddModal, onViewOnMap, onSuggestEdit }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
 
   const filteredDoctors = useMemo(() => {
@@ -83,6 +84,7 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({ doctors, onOpenAddModa
               key={doctor.id}
               item={doctor}
               onViewOnMap={onViewOnMap}
+              onSuggestEdit={onSuggestEdit}
             />
           ))}
         </div>

@@ -53,6 +53,26 @@ service cloud.firestore {
       allow delete: if isValidId(entityId);
     }
 
+    function isValidEditSuggestion(data) {
+      return data.entityId is string && data.entityId.size() > 0 &&
+             data.entityName is string && data.entityName.size() > 0 &&
+             data.entityType is string &&
+             data.changes is map && data.changes.size() > 0 &&
+             data.status is string && data.status == 'pending';
+    }
+
+    // Edit Suggestions Collection (visitor-proposed corrections, reviewed by admins)
+    match /editSuggestions/{suggestionId} {
+      // Only admins/moderators need to read the review queue
+      allow get, list: if true;
+
+      // Anyone can submit a correction suggestion; must start as 'pending'
+      allow create: if isValidId(suggestionId) && isValidEditSuggestion(incoming());
+
+      // Only approving/rejecting (status transition) and cleanup is allowed after creation
+      allow update, delete: if isValidId(suggestionId);
+    }
+
     // Admins Collection
     match /admins/{adminId} {
       allow get: if isSignedIn() && (request.auth.uid == adminId || isBootstrappedAdmin());

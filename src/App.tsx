@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { ActiveTab, HealthEntity } from './types';
+import { ActiveTab, HealthEntity, EditSuggestion } from './types';
 import { HEALTH_DATA } from './data/mockData';
 import { Header } from './components/Header';
 import { HomeView } from './components/HomeView';
@@ -11,23 +11,25 @@ import { DoctorsView } from './components/DoctorsView';
 import { HospitalsView } from './components/HospitalsView';
 import { EmergencyModal } from './components/EmergencyModal';
 import { AddEntityModal } from './components/AddEntityModal';
+import { SuggestEditModal } from './components/SuggestEditModal';
 import { InAppMapModal } from './components/InAppMapModal';
 import { MobileDrawer } from './components/MobileDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { HeartPulse, CheckCircle2, WifiOff } from 'lucide-react';
-import { 
-  subscribeToHealthEntities, 
-  addEntityToFirestore, 
-  updateEntityInFirestore, 
-  deleteEntityFromFirestore 
+import {
+  subscribeToHealthEntities,
+  addEntityToFirestore,
+  updateEntityInFirestore,
+  deleteEntityFromFirestore,
+  submitEditSuggestionToFirestore
 } from './services/firebaseService';
-import { 
-  loadCachedEntities, 
-  saveCachedEntities, 
+import {
+  loadCachedEntities,
+  saveCachedEntities,
   initStorageLifecycle,
-  resetStorageToDefaults 
+  resetStorageToDefaults
 } from './utils/storageManager';
 import { swManager } from './utils/serviceWorkerRegistration';
 import { checkAndNotifyGardeChanges } from './utils/notificationManager';
@@ -43,6 +45,8 @@ function AppContent() {
   }, [activeTab]);
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSuggestEditModalOpen, setIsSuggestEditModalOpen] = useState(false);
+  const [suggestEditEntity, setSuggestEditEntity] = useState<HealthEntity | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -215,6 +219,22 @@ function AppContent() {
     setIsInAppMapOpen(false);
   };
 
+  const handleOpenSuggestEditModal = (entity: HealthEntity) => {
+    setSuggestEditEntity(entity);
+    setIsSuggestEditModalOpen(true);
+  };
+
+  const handleSubmitEditSuggestion = (suggestion: EditSuggestion) => {
+    submitEditSuggestionToFirestore(suggestion).catch((err) => {
+      console.warn('Failed to sync edit suggestion to Firestore:', err);
+    });
+
+    setToastMessage('شكراً لك! تم إرسال اقتراح التعديل وسيتم مراجعته من قبل المشرف قبل نشره.');
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
+
   // Only approved entities are visible to the public site
   const approvedEntities = useMemo(
     () => entities.filter((item) => item.status !== 'pending'),
@@ -281,8 +301,8 @@ function AppContent() {
               <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 <span className="text-xs sm:text-sm font-bold">{toastMessage}</span>
-                <button 
-                  onClick={() => setActiveTab('map')} 
+                <button
+                  onClick={() => setActiveTab('map')}
                   className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-lg font-bold mr-2"
                 >
                   عرض بالخريطة
@@ -332,6 +352,7 @@ function AppContent() {
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onOpenInstallModal={() => setIsInstallModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
+                  onSuggestEdit={handleOpenSuggestEditModal}
                 />
               )}
 
@@ -350,29 +371,33 @@ function AppContent() {
                   todayOnDutyIds={todayOnDutyIds}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
+                  onSuggestEdit={handleOpenSuggestEditModal}
                 />
               )}
 
               {activeTab === 'garde' && (
-                <GardeView 
-                  pharmacies={pharmacies} 
+                <GardeView
+                  pharmacies={pharmacies}
                   onViewOnMap={handleViewOnMap}
+                  onSuggestEdit={handleOpenSuggestEditModal}
                 />
               )}
 
               {activeTab === 'doctors' && (
-                <DoctorsView 
-                  doctors={doctors} 
+                <DoctorsView
+                  doctors={doctors}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
+                  onSuggestEdit={handleOpenSuggestEditModal}
                 />
               )}
 
               {activeTab === 'hospitals' && (
-                <HospitalsView 
-                  facilities={facilities} 
+                <HospitalsView
+                  facilities={facilities}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
+                  onSuggestEdit={handleOpenSuggestEditModal}
                 />
               )}
             </main>
@@ -391,6 +416,14 @@ function AppContent() {
               isOpen={isAddModalOpen}
               onClose={() => setIsAddModalOpen(false)}
               onAddEntity={handleAddEntity}
+            />
+
+            {/* Suggest Edit Modal */}
+            <SuggestEditModal
+              isOpen={isSuggestEditModalOpen}
+              entity={suggestEditEntity}
+              onClose={() => setIsSuggestEditModalOpen(false)}
+              onSubmitSuggestion={handleSubmitEditSuggestion}
             />
 
             {/* Emergency Modal */}

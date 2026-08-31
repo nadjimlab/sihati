@@ -12,7 +12,8 @@ import {
   Pill,
   Stethoscope,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Pencil
 } from 'lucide-react';
 import { HealthEntity } from '../types';
 import { ARABIC_DAYS } from '../data/mockData';
@@ -21,12 +22,14 @@ interface DirectoryCardProps {
   item: HealthEntity;
   isOnDuty?: boolean;
   onViewOnMap?: (item: HealthEntity) => void;
+  onSuggestEdit?: (item: HealthEntity) => void;
 }
 
 export const DirectoryCard: React.FC<DirectoryCardProps> = ({ 
   item, 
   isOnDuty = false,
-  onViewOnMap 
+  onViewOnMap,
+  onSuggestEdit
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -249,6 +252,23 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
           </a>
         </div>
       </div>
+
+      {/* Suggest an edit to this entity's info */}
+      {onSuggestEdit && (
+        <button
+          id={`suggest-edit-${item.id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSuggestEdit(item);
+          }}
+          title="اقتراح تعديل على هذه المعلومات"
+          className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          <span>هل المعلومات غير صحيحة؟ اقترح تعديلاً</span>
+        </button>
+      )}
     </div>
   );
 };

@@ -24,9 +24,10 @@ import {
 interface GardeViewProps {
   pharmacies: HealthEntity[];
   onViewOnMap?: (entity: HealthEntity) => void;
+  onSuggestEdit?: (entity: HealthEntity) => void;
 }
 
-export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap }) => {
+export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap, onSuggestEdit }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
   
   // Custom selected date in YYYY-MM-DD or null (defaults to today)
@@ -270,6 +271,7 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
               item={item}
               isOnDuty={true}
               onViewOnMap={onViewOnMap}
+              onSuggestEdit={onSuggestEdit}
             />
           ))}
         </div>

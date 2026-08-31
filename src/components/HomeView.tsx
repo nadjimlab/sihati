@@ -33,6 +33,7 @@ interface HomeViewProps {
   onOpenAddModal?: () => void;
   onOpenInstallModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
+  onSuggestEdit?: (entity: HealthEntity) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -43,6 +44,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenAddModal,
   onOpenInstallModal,
   onViewOnMap,
+  onSuggestEdit,
 }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
 
@@ -288,6 +290,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   item={item}
                   isOnDuty={todayOnDutyPharmacies.some((p) => p.id === item.id)}
                   onViewOnMap={onViewOnMap}
+                  onSuggestEdit={onSuggestEdit}
                 />
               ))}
             </div>
@@ -539,6 +542,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 item={pharmacy}
                 isOnDuty={true}
                 onViewOnMap={onViewOnMap}
+                onSuggestEdit={onSuggestEdit}
               />
             ))}
           </div>
