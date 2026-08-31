@@ -203,9 +203,43 @@ export function clearAdminSession(): void {
 }
 
 /**
+ * Explicitly fetch moderators from Firestore and update local storage
+ */
+export async function fetchRemoteModerators(): Promise<ModeratorUser[]> {
+  try {
+    const colRef = collection(db, MODERATORS_COLLECTION);
+    const snapshot = await getDocs(colRef);
+    const mods: ModeratorUser[] = [];
+    snapshot.forEach((docSnap) => {
+      const d = docSnap.data();
+      mods.push({
+        id: docSnap.id,
+        name: d.name || '',
+        username: d.username || '',
+        password: d.password || '',
+        email: d.email || undefined,
+        phone: d.phone || undefined,
+        permissions: d.permissions || ['can_edit_entities', 'can_publish_entities'],
+        status: d.status || 'active',
+        createdAt: d.createdAt || new Date().toISOString(),
+        lastLoginAt: d.lastLoginAt || undefined,
+        notes: d.notes || undefined,
+      });
+    });
+
+    if (mods.length > 0) {
+      saveLocalModerators(mods);
+      return mods;
+    }
+  } catch (err) {
+    console.warn('Error fetching remote moderators:', err);
+  }
+  return getLocalModerators();
+}
+
+/**
  * Authenticate either as Super Admin (Master Password) OR as a Moderator (Username/Password or PIN)
- * Note: Case-insensitive comparison is enabled for maximum convenience.
- * Accepts either an object { username, password } or positional arguments (in any order).
+ * Synchronous version
  */
 export function authenticateAdminCredentials(
   arg1: string | { username?: string; password?: string; code?: string }, 
@@ -314,4 +348,23 @@ export function authenticateAdminCredentials(
     isAuthenticated: false,
     isSuperAdmin: false,
   };
+}
+
+/**
+ * Async version that ensures freshest data from Firestore before failing
+ */
+export async function authenticateAdminCredentialsAsync(
+  arg1: string | { username?: string; password?: string; code?: string }, 
+  arg2?: string
+): Promise<AdminSession> {
+  // Try local first for instant responsiveness
+  let session = authenticateAdminCredentials(arg1, arg2);
+  if (session.isAuthenticated) {
+    return session;
+  }
+
+  // If failed locally, fetch remote moderators from Firestore and retry
+  await fetchRemoteModerators();
+  session = authenticateAdminCredentials(arg1, arg2);
+  return session;
 }

@@ -63,6 +63,8 @@ import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminModeratorsTab } from './AdminModeratorsTab';
 import { 
   authenticateAdminCredentials, 
+  authenticateAdminCredentialsAsync,
+  fetchRemoteModerators,
   getStoredAdminSession, 
   saveAdminSession, 
   clearAdminSession 
@@ -127,6 +129,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const canDelete = isSuperAdmin || (adminSession?.permissions?.includes('can_delete_entities') ?? false);
 
   useEffect(() => {
+    // Pre-fetch moderators from Firestore into local cache
+    fetchRemoteModerators().catch(console.warn);
+
     const unsub = subscribeToAuth((user) => {
       setCurrentUser(user);
       if (user) {
@@ -211,15 +216,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // File Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+
   // Authentication Handlers
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setIsSubmittingAuth(true);
+
     try {
       const cleanPass = passwordInput.trim();
       const cleanUser = usernameInput.trim();
 
-      const session = authenticateAdminCredentials({
+      const session = await authenticateAdminCredentialsAsync({
         username: cleanUser,
         password: cleanPass,
       });
@@ -238,6 +247,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     } catch (err: any) {
       setAuthError('حدث خطأ أثناء التحقق من بيانات الدخول.');
+    } finally {
+      setIsSubmittingAuth(false);
     }
   };
 
@@ -684,9 +695,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {loginMode === 'moderator' && (
-              <div className="space-y-1.5 bg-indigo-50/50 p-3.5 rounded-2xl border-2 border-indigo-200">
-                <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-950">
-                  <User className="w-4 h-4 text-indigo-700" />
+              <div className="space-y-2 bg-indigo-50/80 p-4 rounded-2xl border-2 border-indigo-200 shadow-2xs">
+                <label className="flex items-center gap-2 text-sm font-black text-slate-950">
+                  <User className="w-4 h-4 text-indigo-700 shrink-0" />
                   <span>اسم المستخدم للمشرف (Username):</span>
                 </label>
                 <div className="relative">
@@ -695,29 +706,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     type="text"
                     value={usernameInput}
                     onChange={(e) => setUsernameInput(e.target.value)}
-                    placeholder="اكتب اسم المستخدم هنا (مثل: ahmed أو dr_ali)..."
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 bg-white text-slate-950 font-black text-sm sm:text-base placeholder:text-slate-500 shadow-xs transition-all outline-none"
+                    placeholder="اكتب اسم المستخدم (مثل: Sharifi_eloued)..."
+                    className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 bg-white text-slate-950 font-black text-base placeholder:text-slate-500 shadow-xs transition-all outline-none"
                     autoFocus
                     required
                   />
                 </div>
-                <p className="text-xs text-slate-700 font-bold">
-                  👤 اكتب اسم المستخدم المخصص لك (غير مقيد بحالة الأحرف).
+                <p className="text-xs text-slate-800 font-bold">
+                  👤 اكتب اسم المستخدم المخصص لك من طرف الإدارة.
                 </p>
               </div>
             )}
 
-            <div className={`space-y-1.5 p-3.5 rounded-2xl border-2 ${
+            <div className={`space-y-2 p-4 rounded-2xl border-2 shadow-2xs ${
               loginMode === 'admin' 
-                ? 'bg-blue-50/50 border-blue-200' 
-                : 'bg-indigo-50/50 border-indigo-200'
+                ? 'bg-blue-50/80 border-blue-200' 
+                : 'bg-indigo-50/80 border-indigo-200'
             }`}>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-950">
-                  <KeyRound className={`w-4 h-4 ${loginMode === 'admin' ? 'text-blue-700' : 'text-indigo-700'}`} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="flex items-center gap-2 text-sm font-black text-slate-950">
+                  <KeyRound className={`w-4 h-4 shrink-0 ${loginMode === 'admin' ? 'text-blue-700' : 'text-indigo-700'}`} />
                   <span>
                     {loginMode === 'admin' 
-                      ? 'كلمة مرور المدير العام (Password / PIN):' 
+                      ? 'كلمة مرور المدير العام (PIN / Password):' 
                       : 'الرمز السري أو كلمة مرور المشرف (PIN):'}
                   </span>
                 </label>
@@ -729,7 +740,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       setPasswordInput('NADJIM92bejaia');
                       showToast('تم إدراج كلمة المرور الافتراضية بنجاح!', 'info');
                     }}
-                    className="text-[11px] font-black text-blue-700 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                    className="text-xs font-black text-blue-800 hover:text-blue-950 bg-blue-200/80 hover:bg-blue-300 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0"
                     title="ملء كلمة المرور الافتراضية"
                   >
                     <span>⚡ ملء تلقائي</span>
@@ -744,7 +755,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder={loginMode === 'admin' ? 'اكتب كلمة المرور هنا...' : 'اكتب الرمز السري هنا...'}
-                  className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-950 font-black text-sm sm:text-base placeholder:text-slate-500 shadow-xs transition-all outline-none ${
+                  className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 border-slate-300 bg-white text-slate-950 font-black text-base placeholder:text-slate-500 shadow-xs transition-all outline-none ${
                     loginMode === 'admin'
                       ? 'focus:border-blue-600 focus:ring-4 focus:ring-blue-100'
                       : 'focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100'
@@ -755,7 +766,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg transition-colors"
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 p-2 rounded-lg transition-colors z-10"
                   title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4 text-indigo-700" /> : <Eye className="w-4 h-4" />}
@@ -763,12 +774,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               {loginMode === 'admin' && (
-                <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-slate-700 font-bold pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-slate-800 font-bold pt-1">
                   <span>🔒 كلمة المرور الافتراضية:</span>
                   <button
                     type="button"
                     onClick={() => setPasswordInput('NADJIM92bejaia')}
-                    className="bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-md font-mono font-black text-xs transition-colors shadow-2xs"
+                    className="bg-white hover:bg-blue-100 text-blue-950 border-2 border-blue-300 px-2.5 py-1 rounded-lg font-mono font-black text-xs transition-colors shadow-2xs"
                   >
                     NADJIM92bejaia
                   </button>
@@ -779,16 +790,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               id="admin-login-submit-btn"
               type="submit"
-              className={`w-full py-3.5 text-white font-black rounded-xl text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer ${
+              disabled={isSubmittingAuth}
+              className={`w-full py-3.5 text-white font-black rounded-xl text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer disabled:opacity-60 ${
                 loginMode === 'admin'
                   ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30'
                   : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'
               }`}
             >
-              <KeyRound className="w-5 h-5" />
-              <span>
-                {loginMode === 'admin' ? 'تسجيل الدخول كمدير عام' : 'تسجيل دخول المشرف'}
-              </span>
+              {isSubmittingAuth ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <span>جاري التحقق والمزامنة...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-5 h-5" />
+                  <span>
+                    {loginMode === 'admin' ? 'تسجيل الدخول كمدير عام' : 'تسجيل دخول المشرف'}
+                  </span>
+                </>
+              )}
             </button>
           </form>
 
