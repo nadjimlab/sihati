@@ -248,20 +248,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
-    const storedPass = localStorage.getItem(ADMIN_STORAGE_PASS_KEY) || DEFAULT_ADMIN_PASS;
-    if (currentPassword !== storedPass) {
+    const storedPass = (localStorage.getItem(ADMIN_STORAGE_PASS_KEY) || DEFAULT_ADMIN_PASS).trim().toLowerCase();
+    if (currentPassword.trim().toLowerCase() !== storedPass) {
       showToast('كلمة المرور الحالية غير صحيحة!', 'error');
       return;
     }
-    if (newPassword.length < 4) {
-      showToast('يجب أن تتكون كلمة المرور الجديدة من 4 أحرف على الأقل!', 'error');
+    if (newPassword.trim().length < 4) {
+      showToast('يجب أن تتكون كلمة المرور الجديدة من 4 أحرف/أرقام على الأقل!', 'error');
       return;
     }
-    if (newPassword !== confirmPassword) {
+    if (newPassword.trim() !== confirmPassword.trim()) {
       showToast('كلمتا المرور الجديدتان غير متطابقتين!', 'error');
       return;
     }
-    localStorage.setItem(ADMIN_STORAGE_PASS_KEY, newPassword);
+    localStorage.setItem(ADMIN_STORAGE_PASS_KEY, newPassword.trim());
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -738,7 +738,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
               <p className="text-[11px] text-slate-600 font-medium">
-                🔒 الحروف حساسة لحالة الأحرف (الافتراضية للمدير العام: <code className="bg-slate-100 text-blue-700 px-1.5 py-0.5 rounded font-mono font-bold text-xs">NADJIM92bejaia</code>)
+                🔒 كلمة المرور الافتراضية للمدير العام: <code className="bg-slate-100 text-blue-700 px-1.5 py-0.5 rounded font-mono font-bold text-xs">NADJIM92bejaia</code> (يمكن كتابتها بحروف كبيرة أو صغيرة)
               </p>
             </div>
 

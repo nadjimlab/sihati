@@ -204,16 +204,18 @@ export function clearAdminSession(): void {
 
 /**
  * Authenticate either as Super Admin (Master Password) OR as a Moderator (Username/Password or PIN)
+ * Note: Case-insensitive comparison is enabled for maximum convenience.
  */
 export function authenticateAdminCredentials(
   identifierOrPass: string, 
   optionalPassword?: string
 ): AdminSession {
-  const storedSuperPass = localStorage.getItem(ADMIN_STORAGE_PASS_KEY) || DEFAULT_SUPERADMIN_PASS;
-  const input = identifierOrPass.trim();
+  const storedSuperPass = (localStorage.getItem(ADMIN_STORAGE_PASS_KEY) || DEFAULT_SUPERADMIN_PASS).trim().toLowerCase();
+  const input = identifierOrPass.trim().toLowerCase();
+  const optPass = optionalPassword ? optionalPassword.trim().toLowerCase() : '';
 
-  // 1. Check if matches Super Admin Master Password
-  if (input === storedSuperPass || (optionalPassword && optionalPassword.trim() === storedSuperPass)) {
+  // 1. Check if matches Super Admin Master Password (case-insensitive)
+  if (input === storedSuperPass || (optPass && optPass === storedSuperPass)) {
     const session: AdminSession = {
       isAuthenticated: true,
       isSuperAdmin: true,
@@ -231,21 +233,24 @@ export function authenticateAdminCredentials(
     return session;
   }
 
-  // 2. Check if matches a Moderator
+  // 2. Check if matches a Moderator (case-insensitive for username, password, pin, and email)
   const mods = getLocalModerators();
-  const lowerInput = input.toLowerCase();
   
   const matchedMod = mods.find(m => {
     if (m.status === 'suspended') return false;
     
+    const modUsername = (m.username || '').trim().toLowerCase();
+    const modEmail = (m.email || '').trim().toLowerCase();
+    const modPass = (m.password || '').trim().toLowerCase();
+
     // Matched by username and password
-    if (optionalPassword) {
-      const matchUser = m.username.toLowerCase() === lowerInput || (m.email && m.email.toLowerCase() === lowerInput);
-      return matchUser && m.password === optionalPassword.trim();
+    if (optPass) {
+      const matchUser = modUsername === input || (modEmail && modEmail === input);
+      return matchUser && modPass === optPass;
     }
     
     // Matched by direct password/PIN alone or username
-    return m.password === input || m.username.toLowerCase() === lowerInput;
+    return modPass === input || modUsername === input;
   });
 
   if (matchedMod) {
