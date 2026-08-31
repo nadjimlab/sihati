@@ -13,13 +13,12 @@ import { HealthEntity } from '../types';
 import { ARABIC_DAYS } from '../data/mockData';
 import { DirectoryCard } from './DirectoryCard';
 import { AdvancedFilterBar } from './AdvancedFilterBar';
+import { NotificationModal } from './NotificationModal';
 import { AdvancedFilterState, INITIAL_FILTER_STATE, filterEntities } from '../utils/filterUtils';
 import { 
   isNotificationSupported, 
   isGardeNotificationEnabled, 
-  requestNotificationPermission, 
   setGardeNotificationPref,
-  sendBrowserNotification 
 } from '../utils/notificationManager';
 
 interface GardeViewProps {
@@ -41,6 +40,7 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
 
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => isGardeNotificationEnabled());
   const [notifSuccessMessage, setNotifSuccessMessage] = useState<string | null>(null);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
 
   const selectedDate = useMemo(() => {
     if (!customDateStr) return new Date();
@@ -105,32 +105,8 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
     setFilters(INITIAL_FILTER_STATE);
   };
 
-  const handleToggleNotifications = async () => {
-    if (!isNotificationSupported()) {
-      alert('المتصفح الحالي لا يدعم ميزة الإشعارات.');
-      return;
-    }
-
-    if (notificationsEnabled) {
-      setGardeNotificationPref(false);
-      setNotificationsEnabled(false);
-      setNotifSuccessMessage('تم إيقاف تنبيهات تغيير جدول المناوبة.');
-      setTimeout(() => setNotifSuccessMessage(null), 3500);
-    } else {
-      const granted = await requestNotificationPermission();
-      if (granted) {
-        setNotificationsEnabled(true);
-        setNotifSuccessMessage('تم تفعيل التنبيهات بنجاح! سيتم إعلامك فور تحديث قائمة المناوبة.');
-        setTimeout(() => setNotifSuccessMessage(null), 4000);
-
-        // Send a pleasant test notification
-        sendBrowserNotification('✅ تم تفعيل تنبيهات صيدليات المناوبة', {
-          body: 'ستتلقى إشعاراً فورياً عند تحديث جدول المناوبة اليومية بولاية الوادي.',
-        });
-      } else {
-        alert('يرجى السماح بالإشعارات من إعدادات المتصفح لتفعيل هذه الميزة.');
-      }
-    }
+  const handleToggleNotifications = () => {
+    setIsNotificationModalOpen(true);
   };
 
   return (
@@ -314,6 +290,18 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
           </button>
         </div>
       )}
+      {/* Notification Configuration and Guide Modal */}
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => {
+          setIsNotificationModalOpen(false);
+          setNotificationsEnabled(isGardeNotificationEnabled());
+        }}
+        onStateChange={(enabled) => {
+          setNotificationsEnabled(enabled);
+        }}
+      />
     </div>
   );
 };
+
