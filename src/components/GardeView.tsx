@@ -68,14 +68,17 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-800 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-600 rounded-2xl shadow-xs">
+            <div className="p-3 bg-emerald-600 rounded-2xl shadow-xs shrink-0">
               <Clock className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white">
-                  الصيدليات المناوبة (Pharmacies de Garde)
+                  الصيدليات المناوبة
                 </h1>
+                <span dir="ltr" className="text-xs font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-md">
+                  Pharmacies de Garde
+                </span>
                 {isToday && (
                   <span className="text-[11px] font-extrabold bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full shadow-xs">
                     مباشر اليوم

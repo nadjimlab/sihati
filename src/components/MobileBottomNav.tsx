@@ -83,7 +83,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}>
               <Clock className="w-5 h-5" />
             </div>
-            {onDutyCountToday > 0 && (
+            {/* Show badge only when not already viewing the Garde section */}
+            {onDutyCountToday > 0 && activeTab !== 'garde' && (
               <span className="absolute -top-1 -right-1.5 min-w-4.5 h-4.5 px-1 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white animate-pulse">
                 {onDutyCountToday}
               </span>
@@ -91,7 +92,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </div>
           <span className="text-[11px] mt-0.5 font-black text-emerald-800">المناوبة</span>
           {activeTab === 'garde' && (
-            <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+            <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-600" />
           )}
         </button>
 
