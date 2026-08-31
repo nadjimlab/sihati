@@ -51,8 +51,8 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-              <Smartphone className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md shrink-0">
+              <img src="/icon.svg" alt="دليل الصحة" className="w-full h-full rounded-xl object-contain" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">تثبيت التطبيق على الشاشة</h2>
@@ -72,12 +72,12 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
         {/* Content */}
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-3 p-3 bg-blue-50/70 border border-blue-100 rounded-xl">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
-              <HeartPulse className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-xl bg-white p-1 border border-blue-200 flex items-center justify-center shrink-0 shadow-xs">
+              <img src="/icon.svg" alt="أيقونة التطبيق" className="w-full h-full rounded-lg object-contain" />
             </div>
             <div className="text-xs text-blue-900">
-              <p className="font-bold">استخدم التطبيق كالبرامج الأصلية</p>
-              <p className="text-blue-700 mt-0.5">وصول فوري، بدون إعلانات، يعمل بضغطة زر وبدون الحاجة لكتابة الرابط كل مرة.</p>
+              <p className="font-bold">أيقونة رسمية على شاشة هاتفك</p>
+              <p className="text-blue-700 mt-0.5">ستظهر أيقونة التطبيق الزرقاء الرسمية على شاشة هاتفك الرئيسية كأي تطبيق أصلي مثبت.</p>
             </div>
           </div>
 

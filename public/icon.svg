@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1e3a8a" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  <!-- Background Rounded Rect -->
+  <rect width="512" height="512" rx="110" fill="url(#blueGrad)" filter="url(#shadow)" />
+  
+  <!-- Heart with Pulse Line -->
+  <path d="M256 420s-140-92-140-192c0-54 44-98 98-98 32 0 60 16 78 40 18-24 46-40 78-40 54 0 98 44 98 98 0 100-140 192-140 192z" fill="#ffffff" opacity="0.15" />
+  
+  <!-- Caduceus / Pulse Cross Symbol -->
+  <path d="M140 270 L200 270 L225 210 L260 330 L295 240 L320 270 L372 270" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Green Duty Dot -->
+  <circle cx="390" cy="122" r="28" fill="#10b981" stroke="#ffffff" stroke-width="8" />
+</svg>

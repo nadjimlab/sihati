@@ -48,6 +48,7 @@
 - **Animations**: Motion (Framer Motion)
 - **Database & Auth**: Firebase Firestore & Firebase Authentication
 - **Mapping & Geolocation**: OpenStreetMap, Leaflet, Geolocation API
+- **Offline & Service Worker**: Progressive Web App (PWA) with custom Cache-First & Stale-While-Revalidate Service Worker (`/public/sw.js`)
 - **Storage Lifecycle**: Custom `storageManager` for Cache TTL & Garbage Collection
 
 ---
@@ -56,6 +57,9 @@
 
 ```text
 ├── public/                     # Static assets, icons, manifest
+│   ├── sw.js                   # Advanced Service Worker with multi-tier caching
+│   ├── icon.svg                # Vector PWA icon
+│   └── manifest.json           # Web App Manifest
 ├── src/
 │   ├── components/             # UI Components
 │   │   ├── Header.tsx          # Top navigation header & branding
@@ -83,7 +87,8 @@
 │   ├── utils/
 │   │   ├── filterUtils.ts      # Multi-criteria filtering logic
 │   │   ├── geoUtils.ts         # Distance & coordinate calculations
-│   │   └── storageManager.ts   # LocalStorage auto-cleanup & cache lifecycle
+│   │   ├── storageManager.ts   # LocalStorage auto-cleanup & cache lifecycle
+│   │   └── serviceWorkerRegistration.ts # Service Worker registration & network listener
 │   ├── types.ts                # Shared TypeScript types & interfaces
 │   ├── App.tsx                 # Root application component & routing
 │   └── main.tsx                # Application entry point
@@ -93,6 +98,19 @@
 ├── package.json                # Project dependencies and scripts
 └── vite.config.ts              # Vite build configuration
 ```
+
+---
+
+## ⚡ استراتيجية العمل بدون إنترنت (Offline-First & Service Worker)
+
+يعتمد التطبيق على منظومة مزدوجة للعمل أوفلاين:
+1. **Service Worker (`public/sw.js`)**:
+   - **التهيئة والتحميل المسبق (Precache)**: تخزين هيكل التطبيق (HTML, CSS, JS, Manifest, Icons) فور التثبيت.
+   - **استراتيجية Stale-While-Revalidate**: تقديم الأصول والخطوط وخرائط المعاينة فوراً من الكاش مع تحديثها بهدوء في الخلفية.
+   - **استراتيجية التصفح دون اتصال (Navigation Fallback)**: تحويل جميع طلبات التنقل أثناء انقطاع الإنترنت إلى صفحة التطبيق المخزنة محلياً لضمان عدم ظهور شاشة الخطأ "No Internet".
+2. **طبقة البيانات المحلية التلقائية (`storageManager.ts`)**:
+   - حفظ كامل الصيدليات والأطباء وقوائم المناوبة التي تمت زيارتها في التخزين المحلي.
+   - إشعار فوري وتلقائي في واجهة المستخدم عند انقطاع الاتصال يفيد بأن البيانات متاحة ومحفوظة بالكامل.
 
 ---
 
@@ -133,6 +151,31 @@
 1. **التنظيف التلقائي عند بدء التشغيل**: إزالة المفاتيح والنسخ القديمة غير المستخدمة تلقائياً.
 2. **الصيانة الدورية في الخلفية**: تشغيل فحص خفيف كل 30 دقيقة وعند عودة المستخدم للتبويب لتحرير الذاكرة.
 3. **حماية التخزين المحلي**: في حال وصول المتصفح لحدود التخزين القصوى (`QuotaExceededError`)، يقوم التطبيق بتفريغ الذاكرة المؤقتة التالفة والاحتفاظ بالبيانات الضرورية فقط.
+
+---
+
+## 🌐 النشر على Vercel (Deploying to Vercel)
+
+المشروع جاهز ومُهيأ بالكامل للنشر بنقرة واحدة على منصة **Vercel**:
+
+### الطريقة الأولى: عبر GitHub و Vercel Dashboard (موصى بها)
+1. قم برفع المشروع على حسابك في **GitHub**.
+2. توجّه إلى [Vercel Dashboard](https://vercel.com/new).
+3. اختر مستودع المشروع (Repository).
+4. تأكد من إعدادات البناء الافتراضية:
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+5. اضغط على **Deploy** وسيعمل التطبيق فوراً برابط مجاني سريع مع شهادة SSL.
+
+### الطريقة الثانية: عبر Vercel CLI
+```bash
+npm i -g vercel
+vercel
+```
+
+*(تم تضمين ملف `vercel.json` لضمان توجيه مسارات SPA بشكل سليم).*
 
 ---
 

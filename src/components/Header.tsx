@@ -92,15 +92,15 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Actions (Sized with safe gaps so it NEVER overlaps on any screen) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Install App CTA Button (Shown on desktop & tablets) */}
+            {/* Install App CTA Pill Button (Matching user screenshot: pill container, smartphone icon & clear label) */}
             <button
               id="header-install-pwa-btn"
               onClick={onOpenInstallModal}
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-bold text-xs sm:text-sm transition-all shadow-2xs active:scale-95"
+              className="flex items-center gap-1.5 h-8 sm:h-9 px-3 sm:px-4 rounded-full bg-slate-100/90 hover:bg-slate-200/90 text-indigo-950 border border-slate-300/80 font-black text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs active:scale-95 shrink-0"
               title="تثبيت التطبيق على الشاشة الرئيسية للهاتف"
             >
-              <Smartphone className="w-4 h-4 text-indigo-600" />
-              <span>تثبيت التطبيق</span>
+              <Smartphone className="w-4 h-4 text-indigo-900 stroke-[2.2] shrink-0" />
+              <span className="font-extrabold tracking-tight">تثبيت</span>
             </button>
 
             {/* Add Facility Button */}

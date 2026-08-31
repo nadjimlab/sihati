@@ -31,6 +31,7 @@ interface HomeViewProps {
   setActiveTab: (tab: ActiveTab) => void;
   onOpenEmergencyModal: () => void;
   onOpenAddModal?: () => void;
+  onOpenInstallModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
 }
 
@@ -40,6 +41,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   setActiveTab,
   onOpenEmergencyModal,
   onOpenAddModal,
+  onOpenInstallModal,
   onViewOnMap,
 }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
@@ -219,7 +221,43 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </section>
 
-      {/* 2. Instant Search & Filter Results Panel (If Filtering) */}
+      {/* 2. PWA App Install Banner Card inside Home View */}
+      {onOpenInstallModal && (
+        <section className="bg-gradient-to-r from-indigo-900 via-slate-900 to-blue-950 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-indigo-500/30 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-3.5 text-right w-full sm:w-auto">
+              <div className="w-12 h-12 rounded-2xl bg-white p-1 flex items-center justify-center shrink-0 shadow-md">
+                <img src="/icon.svg" alt="أيقونة دليل الصحة" className="w-full h-full rounded-xl object-contain" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-extrabold text-sm sm:text-base text-white">
+                    تثبيت تطبيق دليل الصحة على هاتفك
+                  </h3>
+                  <span className="text-[10px] font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-full">
+                    تطبيق خفيف (PWA)
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                  يعمل بدون إنترنت • وصول فوري لصيدليات المناوبة والأطباء بنقرة واحدة
+                </p>
+              </div>
+            </div>
+
+            <button
+              id="home-install-pwa-banner-btn"
+              onClick={onOpenInstallModal}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-600/20 active:scale-95 transition-all shrink-0"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>تثبيت التطبيق الآن</span>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* 3. Instant Search & Filter Results Panel (If Filtering) */}
       {isFiltering && (
         <section id="instant-search-section" className="space-y-4 animate-in fade-in duration-300">
           <div className="flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">

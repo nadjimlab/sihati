@@ -16,7 +16,7 @@ import { MobileDrawer } from './components/MobileDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { AdminDashboard } from './components/AdminDashboard';
-import { HeartPulse, CheckCircle2 } from 'lucide-react';
+import { HeartPulse, CheckCircle2, WifiOff } from 'lucide-react';
 import { 
   subscribeToHealthEntities, 
   addEntityToFirestore, 
@@ -29,6 +29,7 @@ import {
   initStorageLifecycle,
   resetStorageToDefaults 
 } from './utils/storageManager';
+import { swManager } from './utils/serviceWorkerRegistration';
 
 // Inner component to encapsulate routing & state
 function AppContent() {
@@ -39,6 +40,7 @@ function AppContent() {
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isFirebaseSynced, setIsFirebaseSynced] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState<boolean>(() => swManager.getOnlineStatus());
 
   // PWA install prompt event state
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -54,9 +56,15 @@ function AppContent() {
     // Initialize auto-cleanup & storage lifecycle for localStorage
     const cleanupStorage = initStorageLifecycle();
 
+    // Subscribe to online/offline network changes
+    const unsubscribeNetwork = swManager.subscribeNetworkStatus((online) => {
+      setIsOnline(online);
+    });
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       cleanupStorage();
+      unsubscribeNetwork();
     };
   }, []);
 
@@ -270,6 +278,14 @@ function AppContent() {
               onDutyCountToday={todayOnDutyPharmacies.length}
             />
 
+            {/* Offline Mode Alert Banner */}
+            {!isOnline && (
+              <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs transition-all animate-fadeIn">
+                <WifiOff className="w-4 h-4 text-slate-950 shrink-0" />
+                <span>أنت تتصفح الآن في وضع عدم الاتصال (Offline) - كافة الصيدليات والأطباء والبيانات متاحة ومحفوظة محلياً.</span>
+              </div>
+            )}
+
             {/* Mobile Navigation Drawer */}
             <MobileDrawer
               isOpen={isDrawerOpen}
@@ -291,6 +307,7 @@ function AppContent() {
                   setActiveTab={setActiveTab}
                   onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
+                  onOpenInstallModal={() => setIsInstallModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
                 />
               )}
