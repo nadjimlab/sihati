@@ -227,10 +227,12 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
           <a
             id={`call-btn-${item.id}`}
             href={`tel:${item.phone.replace(/\s+/g, '')}`}
-            className="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-emerald-600/25 hover:shadow-lg hover:shadow-emerald-600/35 active:scale-95 transition-all border border-emerald-500/40"
           >
-            <Phone className="w-3.5 h-3.5 ml-0.5 text-white" />
-            <span>اتصال مباشر</span>
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Phone className="w-3 h-3 text-white" />
+            </div>
+            <span>اتصال فوري</span>
           </a>
         </div>
       </div>

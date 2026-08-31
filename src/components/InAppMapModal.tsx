@@ -431,10 +431,12 @@ export const InAppMapModal: React.FC<InAppMapModalProps> = ({
               <a
                 id="modal-direct-call-btn"
                 href={`tel:${entity.phone.split('/')[0].trim().replace(/\s+/g, '')}`}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all shadow-md shadow-emerald-600/25 active:scale-95 border border-emerald-500/40"
               >
-                <Phone className="w-4 h-4" />
-                <span>اتصال ({entity.phone})</span>
+                <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Phone className="w-3 h-3 text-white" />
+                </div>
+                <span>اتصال فوري ({entity.phone})</span>
               </a>
             </div>
           </div>

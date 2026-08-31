@@ -1,15 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Clock, 
   Info,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Bell,
+  BellRing,
+  BellOff,
+  CheckCircle2
 } from 'lucide-react';
 import { HealthEntity } from '../types';
 import { ARABIC_DAYS } from '../data/mockData';
 import { DirectoryCard } from './DirectoryCard';
 import { AdvancedFilterBar } from './AdvancedFilterBar';
 import { AdvancedFilterState, INITIAL_FILTER_STATE, filterEntities } from '../utils/filterUtils';
+import { 
+  isNotificationSupported, 
+  isGardeNotificationEnabled, 
+  requestNotificationPermission, 
+  setGardeNotificationPref,
+  sendBrowserNotification 
+} from '../utils/notificationManager';
 
 interface GardeViewProps {
   pharmacies: HealthEntity[];
@@ -20,6 +31,8 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
   // 0 = today, 1 = tomorrow, 2 = day after tomorrow, etc.
   const [dateOffset, setDateOffset] = useState<number>(0);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => isGardeNotificationEnabled());
+  const [notifSuccessMessage, setNotifSuccessMessage] = useState<string | null>(null);
 
   const selectedDate = useMemo(() => {
     const d = new Date();
@@ -62,6 +75,34 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
     setFilters(INITIAL_FILTER_STATE);
   };
 
+  const handleToggleNotifications = async () => {
+    if (!isNotificationSupported()) {
+      alert('المتصفح الحالي لا يدعم ميزة الإشعارات.');
+      return;
+    }
+
+    if (notificationsEnabled) {
+      setGardeNotificationPref(false);
+      setNotificationsEnabled(false);
+      setNotifSuccessMessage('تم إيقاف تنبيهات تغيير جدول المناوبة.');
+      setTimeout(() => setNotifSuccessMessage(null), 3500);
+    } else {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setNotificationsEnabled(true);
+        setNotifSuccessMessage('تم تفعيل التنبيهات بنجاح! سيتم إعلامك فور تحديث قائمة المناوبة.');
+        setTimeout(() => setNotifSuccessMessage(null), 4000);
+
+        // Send a pleasant test notification
+        sendBrowserNotification('✅ تم تفعيل تنبيهات صيدليات المناوبة', {
+          body: 'ستتلقى إشعاراً فورياً عند تحديث جدول المناوبة اليومية بولاية الوادي.',
+        });
+      } else {
+        alert('يرجى السماح بالإشعارات من إعدادات المتصفح لتفعيل هذه الميزة.');
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner */}
@@ -98,64 +139,100 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
         </div>
 
         {/* Date Selector Pills */}
-        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center gap-2">
-          <button
-            id="garde-btn-today"
-            onClick={() => setDateOffset(0)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              isToday 
-                ? 'bg-emerald-600 text-white shadow-xs' 
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-            }`}
-          >
-            اليوم ({ARABIC_DAYS[new Date().getDay()]})
-          </button>
-          
-          <button
-            id="garde-btn-tomorrow"
-            onClick={() => setDateOffset(1)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              dateOffset === 1
-                ? 'bg-emerald-600 text-white shadow-xs' 
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-            }`}
-          >
-            غداً ({ARABIC_DAYS[(new Date().getDay() + 1) % 7]})
-          </button>
-
-          <button
-            id="garde-btn-after-tomorrow"
-            onClick={() => setDateOffset(2)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              dateOffset === 2
-                ? 'bg-emerald-600 text-white shadow-xs' 
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-            }`}
-          >
-            بعد غد ({ARABIC_DAYS[(new Date().getDay() + 2) % 7]})
-          </button>
-
-          {/* Quick next/prev offset */}
-          <div className="mr-auto flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setDateOffset(prev => Math.max(0, prev - 1))}
-              disabled={dateOffset <= 0}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
-              title="اليوم السابق"
+              id="garde-btn-today"
+              onClick={() => setDateOffset(0)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                isToday 
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+              }`}
             >
-              <ChevronRight className="w-4 h-4" />
+              اليوم ({ARABIC_DAYS[new Date().getDay()]})
             </button>
-            <span className="text-xs px-2 text-slate-300 font-mono">+{dateOffset} يوم</span>
+            
             <button
-              onClick={() => setDateOffset(prev => prev + 1)}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white transition-colors"
-              title="اليوم التالي"
+              id="garde-btn-tomorrow"
+              onClick={() => setDateOffset(1)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                dateOffset === 1
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+              }`}
             >
-              <ChevronLeft className="w-4 h-4" />
+              غداً ({ARABIC_DAYS[(new Date().getDay() + 1) % 7]})
             </button>
+
+            <button
+              id="garde-btn-after-tomorrow"
+              onClick={() => setDateOffset(2)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                dateOffset === 2
+                  ? 'bg-emerald-600 text-white shadow-xs' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+              }`}
+            >
+              بعد غد ({ARABIC_DAYS[(new Date().getDay() + 2) % 7]})
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Optional Notification Bell Toggle */}
+            <button
+              id="garde-notification-toggle-btn"
+              onClick={handleToggleNotifications}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border shadow-2xs active:scale-95 ${
+                notificationsEnabled
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50 hover:bg-emerald-500/30'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+              }`}
+              title={notificationsEnabled ? 'التنبيهات مفعلة عند تغيير المناوبة' : 'تفعيل إشعارات تغيير صيدليات المناوبة'}
+            >
+              {notificationsEnabled ? (
+                <>
+                  <BellRing className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
+                  <span>تنبيهات المناوبة مفعّلة</span>
+                </>
+              ) : (
+                <>
+                  <Bell className="w-3.5 h-3.5 text-slate-400" />
+                  <span>تفعيل تنبيهات المناوبة</span>
+                </>
+              )}
+            </button>
+
+            {/* Quick next/prev offset */}
+            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+              <button
+                onClick={() => setDateOffset(prev => Math.max(0, prev - 1))}
+                disabled={dateOffset <= 0}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+                title="اليوم السابق"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <span className="text-xs px-2 text-slate-300 font-mono">+{dateOffset} يوم</span>
+              <button
+                onClick={() => setDateOffset(prev => prev + 1)}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white transition-colors"
+                title="اليوم التالي"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Notification Toast/Feedback if triggered */}
+      {notifSuccessMessage && (
+        <div className="bg-emerald-900/90 border border-emerald-500/50 text-white px-4 py-3 rounded-2xl flex items-center gap-3 shadow-md animate-in fade-in duration-200 text-xs sm:text-sm">
+          <CheckCircle2 className="w-5 h-5 text-emerald-300 shrink-0" />
+          <span className="font-medium">{notifSuccessMessage}</span>
+        </div>
+      )}
 
       {/* Filter and Search Card */}
       <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">

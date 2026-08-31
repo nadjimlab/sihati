@@ -30,6 +30,7 @@ import {
   resetStorageToDefaults 
 } from './utils/storageManager';
 import { swManager } from './utils/serviceWorkerRegistration';
+import { checkAndNotifyGardeChanges } from './utils/notificationManager';
 
 // Inner component to encapsulate routing & state
 function AppContent() {
@@ -86,6 +87,22 @@ function AppContent() {
           setEntities(firestoreEntities);
           saveCachedEntities(firestoreEntities);
           setIsFirebaseSynced(true);
+
+          // Check if today's on-duty pharmacies changed and alert user if subscribed
+          const currentDayOfWeek = new Date().getDay();
+          const todayYear = new Date().getFullYear();
+          const todayMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+          const todayDateNum = String(new Date().getDate()).padStart(2, '0');
+          const todayFormattedYMD = `${todayYear}-${todayMonth}-${todayDateNum}`;
+
+          const todayGardeList = firestoreEntities.filter(e => {
+            if (e.type !== 'صيدلية') return false;
+            const matchDay = e.garde_days?.includes(currentDayOfWeek);
+            const matchSpecific = e.garde_dates?.includes(todayFormattedYMD);
+            return Boolean(matchDay || matchSpecific);
+          });
+
+          checkAndNotifyGardeChanges(todayGardeList);
         }
       },
       (error) => {

@@ -60,10 +60,12 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose 
                 <a
                   id={`dial-emergency-${idx}`}
                   href={`tel:${item.number.split('/')[0].trim().replace(/\s+/g, '')}`}
-                  className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
+                  className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl font-extrabold text-sm flex items-center gap-2 shadow-md shadow-red-600/30 active:scale-95 transition-all shrink-0 border border-red-500/50 group-hover:shadow-lg"
                 >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span className="font-mono dir-ltr">{item.number}</span>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <Phone className="w-3.5 h-3.5 text-white fill-white" />
+                  </div>
+                  <span className="font-mono dir-ltr font-black tracking-wide">{item.number}</span>
                 </a>
               </div>
             ))}
