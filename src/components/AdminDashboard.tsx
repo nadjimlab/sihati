@@ -216,10 +216,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     e.preventDefault();
     setAuthError('');
     try {
-      const session = authenticateAdminCredentials(
-        passwordInput.trim(),
-        usernameInput.trim() || undefined
-      );
+      const cleanPass = passwordInput.trim();
+      const cleanUser = usernameInput.trim();
+
+      const session = authenticateAdminCredentials({
+        username: cleanUser,
+        password: cleanPass,
+      });
 
       if (session && session.isAuthenticated) {
         setAdminSession(session);
@@ -231,7 +234,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setUsernameInput('');
         showToast(`مرحباً بك: ${session.name || 'المشرف'} (${session.isSuperAdmin ? 'المدير العام' : 'مشرف معتمد'})`, 'success');
       } else {
-        setAuthError('بيانات الدخول غير صحيحة أو تم تجميد الحساب. يرجى التحقق وإعادة المحاولة.');
+        setAuthError('بيانات الدخول غير صحيحة أو تم تجميد الحساب. يرجى التحقق من صحة اسم المستخدم وكلمة المرور.');
       }
     } catch (err: any) {
       setAuthError('حدث خطأ أثناء التحقق من بيانات الدخول.');
@@ -681,9 +684,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {loginMode === 'moderator' && (
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-900">
-                  <User className="w-4 h-4 text-indigo-600" />
+              <div className="space-y-1.5 bg-indigo-50/50 p-3.5 rounded-2xl border-2 border-indigo-200">
+                <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-950">
+                  <User className="w-4 h-4 text-indigo-700" />
                   <span>اسم المستخدم للمشرف (Username):</span>
                 </label>
                 <div className="relative">
@@ -692,27 +695,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     type="text"
                     value={usernameInput}
                     onChange={(e) => setUsernameInput(e.target.value)}
-                    placeholder="اكتب اسم المستخدم هنا..."
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 bg-white text-slate-900 font-bold text-sm sm:text-base placeholder:text-slate-400 shadow-xs transition-all outline-none"
+                    placeholder="اكتب اسم المستخدم هنا (مثل: ahmed أو dr_ali)..."
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 bg-white text-slate-950 font-black text-sm sm:text-base placeholder:text-slate-500 shadow-xs transition-all outline-none"
                     autoFocus
                     required
                   />
                 </div>
-                <p className="text-[11px] text-slate-600 font-medium">
-                  👤 اكتب اسم المستخدم المخصص لك من طرف الإدارة.
+                <p className="text-xs text-slate-700 font-bold">
+                  👤 اكتب اسم المستخدم المخصص لك (غير مقيد بحالة الأحرف).
                 </p>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-900">
-                <KeyRound className={`w-4 h-4 ${loginMode === 'admin' ? 'text-blue-600' : 'text-indigo-600'}`} />
-                <span>
-                  {loginMode === 'admin' 
-                    ? 'كلمة مرور المدير العام (Admin Password / PIN):' 
-                    : 'الرمز السري أو كلمة مرور المشرف (PIN):'}
-                </span>
-              </label>
+            <div className={`space-y-1.5 p-3.5 rounded-2xl border-2 ${
+              loginMode === 'admin' 
+                ? 'bg-blue-50/50 border-blue-200' 
+                : 'bg-indigo-50/50 border-indigo-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-950">
+                  <KeyRound className={`w-4 h-4 ${loginMode === 'admin' ? 'text-blue-700' : 'text-indigo-700'}`} />
+                  <span>
+                    {loginMode === 'admin' 
+                      ? 'كلمة مرور المدير العام (Password / PIN):' 
+                      : 'الرمز السري أو كلمة مرور المشرف (PIN):'}
+                  </span>
+                </label>
+
+                {loginMode === 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordInput('NADJIM92bejaia');
+                      showToast('تم إدراج كلمة المرور الافتراضية بنجاح!', 'info');
+                    }}
+                    className="text-[11px] font-black text-blue-700 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                    title="ملء كلمة المرور الافتراضية"
+                  >
+                    <span>⚡ ملء تلقائي</span>
+                  </button>
+                )}
+              </div>
+
               <div className="relative">
                 <input
                   id="admin-password-input"
@@ -720,7 +744,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder={loginMode === 'admin' ? 'اكتب كلمة المرور هنا...' : 'اكتب الرمز السري هنا...'}
-                  className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 font-bold text-sm sm:text-base placeholder:text-slate-400 shadow-xs transition-all outline-none ${
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-950 font-black text-sm sm:text-base placeholder:text-slate-500 shadow-xs transition-all outline-none ${
                     loginMode === 'admin'
                       ? 'focus:border-blue-600 focus:ring-4 focus:ring-blue-100'
                       : 'focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100'
@@ -731,15 +755,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg transition-colors"
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg transition-colors"
                   title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4 text-indigo-700" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-600 font-medium">
-                🔒 كلمة المرور الافتراضية للمدير العام: <code className="bg-slate-100 text-blue-700 px-1.5 py-0.5 rounded font-mono font-bold text-xs">NADJIM92bejaia</code> (يمكن كتابتها بحروف كبيرة أو صغيرة)
-              </p>
+
+              {loginMode === 'admin' && (
+                <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-slate-700 font-bold pt-1">
+                  <span>🔒 كلمة المرور الافتراضية:</span>
+                  <button
+                    type="button"
+                    onClick={() => setPasswordInput('NADJIM92bejaia')}
+                    className="bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-md font-mono font-black text-xs transition-colors shadow-2xs"
+                  >
+                    NADJIM92bejaia
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
