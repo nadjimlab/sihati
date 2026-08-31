@@ -1,13 +1,16 @@
 import { HealthEntity } from '../types';
 import { HEALTH_DATA } from '../data/mockData';
 
-export const STORAGE_VERSION = 'v2';
+export const STORAGE_VERSION = 'v3';
 export const ALL_ENTITIES_STORAGE_KEY = `eloued_health_all_entities_${STORAGE_VERSION}`;
 export const CUSTOM_ENTITIES_STORAGE_KEY = `eloued_health_custom_entities_${STORAGE_VERSION}`;
 export const STORAGE_METADATA_KEY = `eloued_health_meta_${STORAGE_VERSION}`;
 
 // Legacy keys to purge automatically on cleanup
 const LEGACY_STORAGE_KEYS = [
+  'eloued_health_custom_entities_v2',
+  'eloued_health_all_entities_v2',
+  'eloued_health_meta_v2',
   'eloued_health_custom_entities_v1',
   'eloued_health_all_entities_v1',
   'eloued_health_custom_entities',

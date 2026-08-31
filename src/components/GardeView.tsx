@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Clock, 
   Info,
@@ -6,8 +6,8 @@ import {
   ChevronRight,
   Bell,
   BellRing,
-  BellOff,
-  CheckCircle2
+  CheckCircle2,
+  CalendarDays
 } from 'lucide-react';
 import { HealthEntity } from '../types';
 import { ARABIC_DAYS } from '../data/mockData';
@@ -29,16 +29,25 @@ interface GardeViewProps {
 
 export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
-  // 0 = today, 1 = tomorrow, 2 = day after tomorrow, etc.
-  const [dateOffset, setDateOffset] = useState<number>(0);
+  
+  // Custom selected date in YYYY-MM-DD or null (defaults to today)
+  const [customDateStr, setCustomDateStr] = useState<string>(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => isGardeNotificationEnabled());
   const [notifSuccessMessage, setNotifSuccessMessage] = useState<string | null>(null);
 
   const selectedDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + dateOffset);
-    return d;
-  }, [dateOffset]);
+    if (!customDateStr) return new Date();
+    const [y, m, d] = customDateStr.split('-').map(Number);
+    if (!y || !m || !d) return new Date();
+    return new Date(y, m - 1, d);
+  }, [customDateStr]);
 
   const dayOfWeekIndex = selectedDate.getDay();
   const dayName = ARABIC_DAYS[dayOfWeekIndex];
@@ -48,7 +57,28 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
     year: 'numeric'
   });
 
-  const isToday = dateOffset === 0;
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const isToday = customDateStr === todayStr;
+
+  const handleStepDay = (step: number) => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + step);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setCustomDateStr(`${year}-${month}-${day}`);
+  };
+
+  const handleSetToday = () => {
+    setCustomDateStr(todayStr);
+  };
 
   // Base list of pharmacies on duty for this specific date/day
   const dateSpecificOnDutyPharmacies = useMemo(() => {
@@ -143,7 +173,7 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
           <div className="flex flex-wrap items-center gap-2">
             <button
               id="garde-btn-today"
-              onClick={() => setDateOffset(0)}
+              onClick={handleSetToday}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 isToday 
                   ? 'bg-emerald-600 text-white shadow-xs' 
@@ -152,30 +182,23 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
             >
               اليوم ({ARABIC_DAYS[new Date().getDay()]})
             </button>
-            
-            <button
-              id="garde-btn-tomorrow"
-              onClick={() => setDateOffset(1)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                dateOffset === 1
-                  ? 'bg-emerald-600 text-white shadow-xs' 
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-              }`}
-            >
-              غداً ({ARABIC_DAYS[(new Date().getDay() + 1) % 7]})
-            </button>
 
-            <button
-              id="garde-btn-after-tomorrow"
-              onClick={() => setDateOffset(2)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                dateOffset === 2
-                  ? 'bg-emerald-600 text-white shadow-xs' 
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-              }`}
-            >
-              بعد غد ({ARABIC_DAYS[(new Date().getDay() + 2) % 7]})
-            </button>
+            {/* Direct date picker */}
+            <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+              <CalendarDays className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <input
+                id="garde-custom-date-picker"
+                type="date"
+                value={customDateStr}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setCustomDateStr(e.target.value);
+                  }
+                }}
+                className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none cursor-pointer"
+                title="اختر تاريخاً محددًا للمناوبة"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -206,16 +229,17 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap })
             {/* Quick next/prev offset */}
             <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
               <button
-                onClick={() => setDateOffset(prev => Math.max(0, prev - 1))}
-                disabled={dateOffset <= 0}
-                className="p-1.5 rounded-lg text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
+                id="garde-btn-prev-day"
+                onClick={() => handleStepDay(-1)}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white transition-colors"
                 title="اليوم السابق"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <span className="text-xs px-2 text-slate-300 font-mono">+{dateOffset} يوم</span>
+              <span className="text-xs px-2 text-slate-300 font-mono">اليوم المحدد</span>
               <button
-                onClick={() => setDateOffset(prev => prev + 1)}
+                id="garde-btn-next-day"
+                onClick={() => handleStepDay(1)}
                 className="p-1.5 rounded-lg text-slate-300 hover:text-white transition-colors"
                 title="اليوم التالي"
               >
