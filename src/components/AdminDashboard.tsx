@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { HealthEntity, HealthEntityType, ActiveTab } from '../types';
+import { HealthEntity, HealthEntityType, ActiveTab, ModeratorUser, ModeratorPermission, AdminSession } from '../types';
 import { COMMUNES, SPECIALTIES } from '../data/mockData';
 import { 
   ShieldCheck, 
@@ -45,7 +45,10 @@ import {
   CloudUpload,
   UserCheck,
   CheckCircle,
-  Inbox
+  Inbox,
+  TrendingUp,
+  Users,
+  User
 } from 'lucide-react';
 import { 
   syncInitialDataToFirestore, 
@@ -54,7 +57,15 @@ import {
   subscribeToAuth,
   approveEntityInFirestore
 } from '../services/firebaseService';
-import { User } from 'firebase/auth';
+import { User as FirebaseUser } from 'firebase/auth';
+import { AdminAnalyticsTab } from './AdminAnalyticsTab';
+import { AdminModeratorsTab } from './AdminModeratorsTab';
+import { 
+  authenticateAdminCredentials, 
+  getStoredAdminSession, 
+  saveAdminSession, 
+  clearAdminSession 
+} from '../utils/moderatorManager';
 
 interface AdminDashboardProps {
   entities: HealthEntity[];
@@ -67,7 +78,7 @@ interface AdminDashboardProps {
   onViewOnMap?: (entity: HealthEntity) => void;
 }
 
-type AdminSubTab = 'overview' | 'pending' | 'entities' | 'garde' | 'backup' | 'settings';
+type AdminSubTab = 'overview' | 'analytics' | 'pending' | 'entities' | 'garde' | 'moderators' | 'backup' | 'settings';
 
 const ADMIN_STORAGE_PASS_KEY = 'eloued_health_admin_password';
 const ADMIN_SESSION_AUTH_KEY = 'eloued_health_admin_auth';
@@ -94,14 +105,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onViewOnMap,
 }) => {
   // Authentication State
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(() => getStoredAdminSession());
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem(ADMIN_SESSION_AUTH_KEY) === 'true';
   });
+  const [loginMode, setLoginMode] = useState<'admin' | 'moderator'>('admin');
   const [passwordInput, setPasswordInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
   const [authError, setAuthError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSyncingToCloud, setIsSyncingToCloud] = useState(false);
+
+  // Moderator Permission Checks
+  const isSuperAdmin = !adminSession || adminSession.role === 'super_admin' || !!currentUser;
+  const canEdit = isSuperAdmin || (adminSession?.permissions?.includes('can_edit_entities') ?? true);
+  const canPublish = isSuperAdmin || (adminSession?.permissions?.includes('can_publish_entities') ?? true);
+  const canManageGarde = isSuperAdmin || (adminSession?.permissions?.includes('can_manage_garde') ?? true);
+  const canAdd = isSuperAdmin || (adminSession?.permissions?.includes('can_add_entities') ?? true);
+  const canDelete = isSuperAdmin || (adminSession?.permissions?.includes('can_delete_entities') ?? false);
 
   useEffect(() => {
     const unsub = subscribeToAuth((user) => {
@@ -189,22 +211,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Authentication Handlers
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rawStored = localStorage.getItem(ADMIN_STORAGE_PASS_KEY);
-    const storedPass = (rawStored && rawStored !== 'admin123') ? rawStored : DEFAULT_ADMIN_PASS;
-    if (passwordInput.trim() === storedPass) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem(ADMIN_SESSION_AUTH_KEY, 'true');
-      setAuthError('');
-      setPasswordInput('');
-    } else {
-      setAuthError('كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+    setAuthError('');
+    try {
+      const session = authenticateAdminCredentials(
+        passwordInput.trim(),
+        usernameInput.trim() || undefined
+      );
+
+      if (session && session.isAuthenticated) {
+        setAdminSession(session);
+        saveAdminSession(session);
+        setIsAuthenticated(true);
+        sessionStorage.setItem(ADMIN_SESSION_AUTH_KEY, 'true');
+        setAuthError('');
+        setPasswordInput('');
+        setUsernameInput('');
+        showToast(`مرحباً بك: ${session.name || 'المشرف'} (${session.isSuperAdmin ? 'المدير العام' : 'مشرف معتمد'})`, 'success');
+      } else {
+        setAuthError('بيانات الدخول غير صحيحة أو تم تجميد الحساب. يرجى التحقق وإعادة المحاولة.');
+      }
+    } catch (err: any) {
+      setAuthError('حدث خطأ أثناء التحقق من بيانات الدخول.');
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setAdminSession(null);
+    clearAdminSession();
     sessionStorage.removeItem(ADMIN_SESSION_AUTH_KEY);
     showToast('تم تسجيل الخروج من لوحة التحكم بنجاح', 'info');
   };
@@ -271,6 +307,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
+    if (editingEntity && !canEdit) {
+      showToast('عذراً، ليس لديك صلاحية تعديل بيانات المنشآت الطبية!', 'error');
+      return;
+    }
+    if (!editingEntity && !canAdd) {
+      showToast('عذراً، ليس لديك صلاحية إضافة منشآت طبية جديدة!', 'error');
+      return;
+    }
+
     if (editingEntity) {
       // Update existing
       const updatedItem: HealthEntity = {
@@ -333,6 +378,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Quick Toggle Garde for Pharmacy in Table or Garde Planner
   const handleQuickToggleGarde = (pharmacyId: string, dayId: number) => {
+    if (!canManageGarde) {
+      showToast('عذراً، ليس لديك صلاحية تعديل وجدولة صيدليات المناوبة!', 'error');
+      return;
+    }
     const target = entities.find(e => e.id === pharmacyId);
     if (!target || target.type !== 'صيدلية') return;
 
@@ -354,6 +403,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Confirm Delete
   const handleConfirmDelete = () => {
+    if (!canDelete) {
+      showToast('عذراً، ليس لديك صلاحية حذف المنشآت الطبية!', 'error');
+      setDeletingId(null);
+      return;
+    }
     if (deletingId) {
       onDeleteEntity(deletingId);
       showToast('تم حذف المنشأة الطبية بنجاح', 'info');
@@ -491,6 +545,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [entities]);
 
   const handleApproveEntity = async (entity: HealthEntity) => {
+    if (!canPublish) {
+      showToast('عذراً، ليس لديك صلاحية نشر واعتماد الطلبات الجديدة!', 'error');
+      return;
+    }
     const updated: HealthEntity = {
       ...entity,
       status: 'approved',
@@ -582,11 +640,66 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* Login Type Selector */}
+          <div className="flex bg-slate-100 p-1 rounded-2xl gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('admin');
+                setAuthError('');
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                loginMode === 'admin'
+                  ? 'bg-white text-blue-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>المدير العام (Master)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('moderator');
+                setAuthError('');
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                loginMode === 'moderator'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>دخول مشرف معتمد</span>
+            </button>
+          </div>
+
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
+            {loginMode === 'moderator' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  اسم المستخدم للمشرف (Username)
+                </label>
+                <input
+                  id="moderator-username-input"
+                  type="text"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="أدخل اسم المستخدم..."
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-sm font-medium transition-all"
+                  autoFocus
+                  required
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                كلمة مرور الإدارة (Admin PIN / Password)
+                {loginMode === 'admin' 
+                  ? 'كلمة مرور المدير العام (Admin Password / PIN)' 
+                  : 'الرمز السري أو كلمة مرور المشرف'}
               </label>
               <div className="relative">
                 <input
@@ -594,9 +707,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="أدخل كلمة المرور..."
+                  placeholder={loginMode === 'admin' ? 'أدخل كلمة المرور...' : 'أدخل الرمز السري...'}
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-sm font-medium transition-all"
-                  autoFocus
+                  autoFocus={loginMode === 'admin'}
                   required
                 />
                 <button
@@ -612,10 +725,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               id="admin-login-submit-btn"
               type="submit"
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+              className={`w-full py-3 text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.99] ${
+                loginMode === 'admin'
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                  : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+              }`}
             >
               <KeyRound className="w-4 h-4" />
-              <span>دخول لوحة التحكم بالرمز السري</span>
+              <span>
+                {loginMode === 'admin' ? 'تسجيل الدخول كمدير عام' : 'تسجيل دخول المشرف'}
+              </span>
             </button>
           </form>
 
@@ -682,32 +801,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Admin Top Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600/30 border border-blue-400/30 backdrop-blur-md flex items-center justify-center text-blue-400 shadow-inner">
+          <div className="w-12 h-12 rounded-2xl bg-blue-600/30 border border-blue-400/30 backdrop-blur-md flex items-center justify-center text-blue-400 shadow-inner shrink-0">
             <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">لوحة تحكم الإدارة</h1>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                مشرف نشط
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                isSuperAdmin
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                  : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+              }`}>
+                {isSuperAdmin ? 'المدير العام (Super Admin)' : `مشرف: ${adminSession?.name || 'محرر'}`}
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              إدارة شاملة لبيانات ولاية الوادي • {entities.length} منشأة مسجلة
+              دليل الصحة لولاية الوادي • {entities.length} منشأة مسجلة
+              {!isSuperAdmin && adminSession?.permissions && (
+                <span className="mr-2 text-indigo-300 text-[11px]">
+                  ({adminSession.permissions.length} صلاحيات مفعلة)
+                </span>
+              )}
             </p>
           </div>
         </div>
 
         {/* Quick Admin Actions */}
         <div className="flex items-center flex-wrap gap-2 w-full md:w-auto">
-          <button
-            id="admin-add-facility-btn"
-            onClick={handleOpenAdd}
-            className="flex-1 md:flex-initial px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/30 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>إضافة منشأة</span>
-          </button>
+          {canAdd && (
+            <button
+              id="admin-add-facility-btn"
+              onClick={handleOpenAdd}
+              className="flex-1 md:flex-initial px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/30 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة منشأة</span>
+            </button>
+          )}
 
           <button
             id="admin-export-quick-btn"
@@ -744,20 +874,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <button
           id="admin-tab-overview"
           onClick={() => setSubTab('overview')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             subTab === 'overview'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
-          <span>الإحصائيات والتحليلات</span>
+          <span>نظرة عامة</span>
+        </button>
+
+        <button
+          id="admin-tab-analytics"
+          onClick={() => setSubTab('analytics')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            subTab === 'analytics'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4 text-emerald-500" />
+          <span>إحصائيات الزيارات الحقيقية</span>
+          <span className="px-1.5 py-0.2 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800">
+            مباشر
+          </span>
         </button>
 
         <button
           id="admin-tab-pending"
           onClick={() => setSubTab('pending')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap relative ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap relative ${
             subTab === 'pending'
               ? 'bg-amber-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -777,54 +923,69 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <button
           id="admin-tab-entities"
           onClick={() => setSubTab('entities')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             subTab === 'entities'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>إدارة المنشآت الطبية ({entities.length})</span>
+          <span>إدارة المنشآت ({entities.length})</span>
         </button>
 
         <button
           id="admin-tab-garde"
           onClick={() => setSubTab('garde')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             subTab === 'garde'
               ? 'bg-emerald-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           <Calendar className="w-4 h-4 text-emerald-500" />
-          <span>مخطط صيدليات المناوبة ({stats.todayGardeCount} اليوم)</span>
+          <span>صيدليات المناوبة ({stats.todayGardeCount} اليوم)</span>
+        </button>
+
+        <button
+          id="admin-tab-moderators"
+          onClick={() => setSubTab('moderators')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            subTab === 'moderators'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Users className="w-4 h-4 text-indigo-500" />
+          <span>إدارة المشرفين والصلاحيات</span>
         </button>
 
         <button
           id="admin-tab-backup"
           onClick={() => setSubTab('backup')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
             subTab === 'backup'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           <Database className="w-4 h-4" />
-          <span>النسخ والاستيراد والتصدير</span>
+          <span>النسخ والاستيراد</span>
         </button>
 
-        <button
-          id="admin-tab-settings"
-          onClick={() => setSubTab('settings')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-            subTab === 'settings'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>إعدادات الأمان</span>
-        </button>
+        {isSuperAdmin && (
+          <button
+            id="admin-tab-settings"
+            onClick={() => setSubTab('settings')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              subTab === 'settings'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>إعدادات الأمان</span>
+          </button>
+        )}
       </div>
 
       {/* ----------------------------------------------------------------- */}
@@ -1491,6 +1652,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             })}
           </div>
         </div>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* TAB: REAL-TIME SITE ANALYTICS */}
+      {/* ----------------------------------------------------------------- */}
+      {subTab === 'analytics' && (
+        <AdminAnalyticsTab isSuperAdmin={isSuperAdmin} onShowToast={showToast} />
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* TAB: MODERATORS & PERMISSIONS MANAGEMENT */}
+      {/* ----------------------------------------------------------------- */}
+      {subTab === 'moderators' && (
+        <AdminModeratorsTab isSuperAdmin={isSuperAdmin} onShowToast={showToast} />
       )}
 
       {/* ----------------------------------------------------------------- */}

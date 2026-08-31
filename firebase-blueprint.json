@@ -126,6 +126,35 @@
         }
       },
       "required": ["email", "role"]
+    },
+    "ModeratorUser": {
+      "title": "ModeratorUser",
+      "description": "Moderator with custom editing and publishing permissions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "username": { "type": "string", "maxLength": 50 },
+        "permissions": { "type": "array" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "username", "permissions", "status"]
+    },
+    "SiteAnalytics": {
+      "title": "SiteAnalytics",
+      "description": "Aggregated real-time website analytics",
+      "type": "object",
+      "properties": {
+        "totalVisits": { "type": "number" },
+        "uniqueVisitors": { "type": "number" },
+        "todayVisits": { "type": "number" },
+        "dailyVisits": { "type": "object" },
+        "tabVisits": { "type": "object" },
+        "deviceStats": { "type": "object" },
+        "recentVisits": { "type": "array" },
+        "lastUpdated": { "type": "string" }
+      },
+      "required": ["totalVisits", "todayVisits"]
     }
   },
   "firestore": {
@@ -136,6 +165,14 @@
     "/admins/{adminId}": {
       "schema": "AdminUser",
       "description": "Administrator whitelist documents"
+    },
+    "/moderators/{moderatorId}": {
+      "schema": "ModeratorUser",
+      "description": "Sub-admins and moderators who can edit or publish"
+    },
+    "/analytics/{docId}": {
+      "schema": "SiteAnalytics",
+      "description": "Real-time aggregated website traffic stats"
     }
   }
 }

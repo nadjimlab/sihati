@@ -31,10 +31,16 @@ import {
 } from './utils/storageManager';
 import { swManager } from './utils/serviceWorkerRegistration';
 import { checkAndNotifyGardeChanges } from './utils/notificationManager';
+import { recordSiteVisit } from './utils/analyticsManager';
 
 // Inner component to encapsulate routing & state
 function AppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+
+  // Track site visits per activeTab
+  useEffect(() => {
+    recordSiteVisit(activeTab).catch(console.warn);
+  }, [activeTab]);
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

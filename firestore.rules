@@ -60,6 +60,18 @@ service cloud.firestore {
       allow write: if isBootstrappedAdmin() && isValidId(adminId);
     }
 
+    // Moderators Collection
+    match /moderators/{moderatorId} {
+      allow get, list: if true;
+      allow write: if isValidId(moderatorId);
+    }
+
+    // Analytics Collection (Site visits and stats)
+    match /analytics/{docId} {
+      allow get, list: if true;
+      allow write: if isValidId(docId);
+    }
+
     // Connection test document
     match /test/connection {
       allow get: if true;
