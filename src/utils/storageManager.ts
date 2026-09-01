@@ -1,7 +1,7 @@
 import { HealthEntity } from '../types';
 import { HEALTH_DATA } from '../data/mockData';
 
-export const STORAGE_VERSION = 'v3';
+export const STORAGE_VERSION = 'v4';
 export const ALL_ENTITIES_STORAGE_KEY = `eloued_health_all_entities_${STORAGE_VERSION}`;
 export const CUSTOM_ENTITIES_STORAGE_KEY = `eloued_health_custom_entities_${STORAGE_VERSION}`;
 export const STORAGE_METADATA_KEY = `eloued_health_meta_${STORAGE_VERSION}`;

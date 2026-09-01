@@ -18,6 +18,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { HeartPulse, CheckCircle2, WifiOff } from 'lucide-react';
+
 import {
   subscribeToHealthEntities,
   addEntityToFirestore,
@@ -34,6 +35,18 @@ import {
 import { swManager } from './utils/serviceWorkerRegistration';
 import { checkAndNotifyGardeChanges } from './utils/notificationManager';
 import { recordSiteVisit } from './utils/analyticsManager';
+
+// Keep the complete built-in directory visible even when Firestore still has an older partial snapshot.
+const mergeWithDefaultEntities = (firestoreEntities: HealthEntity[]): HealthEntity[] => {
+  const firestoreById = new Map(firestoreEntities.map((entity) => [entity.id, entity]));
+  const defaultsWithFirestoreOverrides = HEALTH_DATA.map((defaultEntity) =>
+    firestoreById.get(defaultEntity.id) ?? defaultEntity
+  );
+  const additionalFirestoreEntities = firestoreEntities.filter(
+    (entity) => !HEALTH_DATA.some((defaultEntity) => defaultEntity.id === entity.id)
+  );
+  return [...defaultsWithFirestoreOverrides, ...additionalFirestoreEntities];
+};
 
 // Inner component to encapsulate routing & state
 function AppContent() {
@@ -94,8 +107,9 @@ function AppContent() {
     const unsubscribe = subscribeToHealthEntities(
       (firestoreEntities) => {
         if (firestoreEntities && firestoreEntities.length > 0) {
-          setEntities(firestoreEntities);
-          saveCachedEntities(firestoreEntities);
+          const mergedEntities = mergeWithDefaultEntities(firestoreEntities);
+          setEntities(mergedEntities);
+          saveCachedEntities(mergedEntities);
           setIsFirebaseSynced(true);
 
           // Check if today's on-duty pharmacies changed and alert user if subscribed
