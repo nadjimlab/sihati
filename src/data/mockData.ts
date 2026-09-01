@@ -1,5 +1,6 @@
 import { HealthEntity } from '../types';
 import { PHARMACIES_DATA } from './pharmaciesData';
+import { DOCTORS_DATA } from './doctorsData';
 
 export const COMMUNES = [
   "الكل",
@@ -42,6 +43,10 @@ export const SPECIALTIES = [
   "أمراض الرئة والجهاز التنفسي",
   "طب الأشعة والتصوير الطبي",
   "طب الأطفال",
+  "إعادة التأهيل الحركي والوظيفي",
+  "العلاج الطبيعي والطب البديل",
+  "الجراحة العامة",
+  "طب أمراض الدم",
 ];
 
 export const EMERGENCY_NUMBERS = [
@@ -56,6 +61,9 @@ export const EMERGENCY_NUMBERS = [
 export const HEALTH_DATA: HealthEntity[] = [
   // ===================== الصيدليات الرسمية (Official Pharmacies Data) =====================
   ...PHARMACIES_DATA,
+
+  // ===================== الأطباء والعيادات التخصصية (Doctors Data) =====================
+  ...DOCTORS_DATA,
 
   // ===================== المستشفيات والعيادات (Hospitals & Clinics) =====================
   {
