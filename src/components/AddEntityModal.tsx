@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Plus, 
-  MapPin, 
-  Phone, 
-  Stethoscope, 
-  Pill, 
-  Building2, 
-  LocateFixed, 
-  Check, 
+import {
+  X,
+  Plus,
+  MapPin,
+  Phone,
+  Stethoscope,
+  Pill,
+  Building2,
+  LocateFixed,
+  Check,
   AlertCircle,
   Clock,
   FileText
@@ -99,7 +99,7 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
       return;
     }
 
-    const finalSpecialty = type === 'طبيب' 
+    const finalSpecialty = type === 'طبيب'
       ? (specialty === 'أخرى' && customSpecialty.trim() ? customSpecialty.trim() : specialty)
       : undefined;
 
@@ -143,7 +143,7 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-      <div 
+      <div
         className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-8 text-right font-['Tajawal'] dir-rtl"
         role="dialog"
         aria-modal="true"
@@ -207,7 +207,7 @@ export const AddEntityModal: React.FC<AddEntityModalProps> = ({
                     type="button"
                     onClick={() => setType(t.id as HealthEntityType)}
                     className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
-                      isSelected实施 
+                      isSelected实施
                         ? 'bg-blue-50 border-blue-600 text-blue-700 shadow-xs'
                         : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                     }`}

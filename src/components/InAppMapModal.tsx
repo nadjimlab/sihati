@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  MapPin, 
-  Phone, 
-  Clock, 
-  Navigation, 
-  Car, 
-  Footprints, 
-  LocateFixed, 
-  Compass, 
-  Copy, 
-  Check, 
-  Maximize2, 
-  Pill, 
-  Stethoscope, 
-  Building2, 
+import {
+  X,
+  MapPin,
+  Phone,
+  Clock,
+  Navigation,
+  Car,
+  Footprints,
+  LocateFixed,
+  Compass,
+  Copy,
+  Check,
+  Maximize2,
+  Pill,
+  Stethoscope,
+  Building2,
   ShieldAlert,
-  Calendar
+  Calendar,
+  Share2
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -30,6 +31,7 @@ interface InAppMapModalProps {
   onClose: () => void;
   onOpenFullMap: (entity: HealthEntity) => void;
   isOnDuty?: boolean;
+  onShare?: (entity: HealthEntity) => void;
 }
 
 // Controller to smoothly pan & fit bounds inside the modal map
@@ -61,6 +63,7 @@ export const InAppMapModal: React.FC<InAppMapModalProps> = ({
   onClose,
   onOpenFullMap,
   isOnDuty = false,
+  onShare,
 }) => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -151,8 +154,8 @@ export const InAppMapModal: React.FC<InAppMapModalProps> = ({
         box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       ">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${entity.type === 'صيدلية' 
-            ? '<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>' 
+          ${entity.type === 'صيدلية'
+            ? '<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>'
             : entity.type === 'طبيب'
             ? '<path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/>'
             : '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>'}
@@ -178,7 +181,7 @@ export const InAppMapModal: React.FC<InAppMapModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/75 backdrop-blur-xs overflow-y-auto font-['Tajawal'] dir-rtl">
-      <div 
+      <div
         className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto text-right flex flex-col max-h-[90vh]"
         role="dialog"
         aria-modal="true"
@@ -396,24 +399,46 @@ export const InAppMapModal: React.FC<InAppMapModalProps> = ({
             )}
           </div>
 
-          {/* Actions: In-App Full Map, Phone, Copy */}
+          {/* Actions: Share, In-App Full Map, Phone, Copy */}
           <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
-            <button
-              onClick={handleCopyDetails}
-              className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  <span className="text-emerald-700 font-bold">تم نسخ البيانات</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 text-slate-500" />
-                  <span>نسخ الإحداثيات والعنوان</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopyDetails}
+                className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-700 font-bold">تم نسخ البيانات</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-slate-500" />
+                    <span>نسخ</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                id="modal-share-entity-btn"
+                onClick={() => {
+                  if (onShare) {
+                    onShare(entity);
+                  } else if (navigator.share) {
+                    navigator.share({
+                      title: entity.name,
+                      text: `${entity.name} (${entity.type}) - ${entity.commune} - هاتف: ${entity.phone}`,
+                      url: window.location.href,
+                    }).catch(() => {});
+                  }
+                }}
+                className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="مشاركة عبر واتساب، فيسبوك، إنستغرام..."
+              >
+                <Share2 className="w-4 h-4 text-blue-600" />
+                <span>مشاركة</span>
+              </button>
+            </div>
 
             <div className="flex items-center gap-2">
               <button

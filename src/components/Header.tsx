@@ -1,18 +1,19 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { 
-  HeartPulse, 
-  Pill, 
-  Stethoscope, 
-  Building2, 
-  Clock, 
-  Home, 
-  ShieldAlert, 
+import {
+  HeartPulse,
+  Pill,
+  Stethoscope,
+  Building2,
+  Clock,
+  Home,
+  ShieldAlert,
   Menu,
   Smartphone,
   Navigation,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react';
 import { ActiveTab } from '../types';
 
@@ -23,6 +24,7 @@ interface HeaderProps {
   onOpenAddModal: () => void;
   onOpenDrawer: () => void;
   onOpenInstallModal: () => void;
+  onOpenShare?: () => void;
   onDutyCountToday: number;
 }
 
@@ -33,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddModal,
   onOpenDrawer,
   onOpenInstallModal,
+  onOpenShare,
   onDutyCountToday,
 }) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -68,10 +71,10 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Banner with branding & Quick actions */}
       <div className="max-w-6xl mx-auto px-3 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16 md:h-20 gap-2">
-          
+
           {/* Logo & Site Title (Always clear and never overlapping) */}
           <div className="flex items-center gap-2 min-w-0 shrink">
-            <button 
+            <button
               id="brand-logo-btn"
               onClick={() => setActiveTab('home')}
               className="flex items-center gap-2 sm:gap-3 text-right focus:outline-hidden group min-w-0"
@@ -92,6 +95,19 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Actions (Sized with safe gaps so it NEVER overlaps on any screen) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Share App Button */}
+            {onOpenShare && (
+              <button
+                id="header-share-app-btn"
+                onClick={onOpenShare}
+                className="flex items-center justify-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/90 font-bold text-xs sm:text-sm transition-all shadow-2xs group active:scale-95 shrink-0"
+                title="نشر ومشاركة التطبيق عبر واتساب، فيسبوك، إنستغرام..."
+              >
+                <Share2 className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
+                <span className="hidden md:inline font-extrabold text-xs">نشر التطبيق</span>
+              </button>
+            )}
+
             {/* Install App CTA Pill Button (Matching user screenshot: pill container, smartphone icon & clear label) */}
             <button
               id="header-install-pwa-btn"
@@ -143,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Navigation Tabs Bar (Visible ONLY on md+ desktop screens; hidden on mobile in favor of the bottom bar) */}
       <div className="hidden md:block bg-slate-50/95 border-t border-slate-200/80 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div 
+          <div
             ref={tabsContainerRef}
             onScroll={checkScroll}
             className="flex items-center space-x-reverse space-x-2 py-2 overflow-x-auto scrollbar-none"

@@ -10,13 +10,13 @@
   </defs>
   <!-- Background Rounded Rect -->
   <rect width="512" height="512" rx="110" fill="url(#blueGrad)" filter="url(#shadow)" />
-  
+
   <!-- Heart with Pulse Line -->
   <path d="M256 420s-140-92-140-192c0-54 44-98 98-98 32 0 60 16 78 40 18-24 46-40 78-40 54 0 98 44 98 98 0 100-140 192-140 192z" fill="#ffffff" opacity="0.15" />
-  
+
   <!-- Caduceus / Pulse Cross Symbol -->
   <path d="M140 270 L200 270 L225 210 L260 330 L295 240 L320 270 L372 270" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" />
-  
+
   <!-- Green Duty Dot -->
   <circle cx="390" cy="122" r="28" fill="#10b981" stroke="#ffffff" stroke-width="8" />
 </svg>

@@ -1,15 +1,15 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut, 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
   onAuthStateChanged,
-  User 
+  User
 } from 'firebase/auth';
-import { 
-  getFirestore, 
-  doc, 
+import {
+  getFirestore,
+  doc,
   getDocFromServer,
   collection,
   getDocs,

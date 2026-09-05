@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Bell, 
-  BellRing, 
-  CheckCircle2, 
-  AlertCircle, 
-  Settings, 
-  Lock, 
+import {
+  X,
+  Bell,
+  BellRing,
+  CheckCircle2,
+  AlertCircle,
+  Settings,
+  Lock,
   RefreshCw,
   Send,
   Smartphone,
@@ -14,13 +14,13 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
-import { 
-  isNotificationSupported, 
-  getNotificationPermission, 
-  requestNotificationPermission, 
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
   setGardeNotificationPref,
   isGardeNotificationEnabled,
-  sendBrowserNotification 
+  sendBrowserNotification
 } from '../utils/notificationManager';
 
 interface NotificationModalProps {
@@ -110,7 +110,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs font-['Tajawal'] dir-rtl">
-      <div 
+      <div
         className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-right flex flex-col max-h-[90vh]"
         role="dialog"
         aria-modal="true"
@@ -141,8 +141,8 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
           {statusMessage && (
             <div className={`p-3.5 rounded-2xl text-xs font-medium border flex items-start gap-2.5 ${
-              statusMessage.startsWith('✅') 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+              statusMessage.startsWith('✅')
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 : 'bg-amber-50 text-amber-900 border-amber-200'
             }`}>
               {statusMessage.startsWith('✅') ? (

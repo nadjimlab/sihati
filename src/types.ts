@@ -26,48 +26,6 @@ export interface HealthEntity {
   updatedAt?: string;
 }
 
-/** Fields of a HealthEntity that visitors are allowed to propose corrections for */
-export type EditableEntityField =
-  | 'name'
-  | 'specialty'
-  | 'commune'
-  | 'address'
-  | 'phone'
-  | 'secondaryPhone'
-  | 'workingHours'
-  | 'isEmergency'
-  | 'garde_days'
-  | 'garde_shift'
-  | 'notes'
-  | 'latitude'
-  | 'longitude';
-
-/**
- * A visitor-submitted suggestion to correct/update the info of an existing
- * HealthEntity. Nothing is applied to the public entity until an admin
- * (or an authorized moderator) approves it from the admin dashboard.
- */
-export interface EditSuggestion {
-  id: string;
-  entityId: string;
-  /** Snapshot of the entity name/type at submission time, for display even if entity changes later */
-  entityName: string;
-  entityType: HealthEntityType;
-  /** Only the fields the visitor proposed to change, with their new values */
-  changes: Partial<Record<EditableEntityField, any>>;
-  /** The entity's values for those same fields at the time of submission, used to render a before/after diff */
-  originalValues: Partial<Record<EditableEntityField, any>>;
-  /** Optional note from the visitor explaining the correction */
-  reporterNote?: string;
-  /** Optional contact info the visitor left in case the admin needs to follow up */
-  reporterContact?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
-  rejectionReason?: string;
-}
-
 export type ActiveTab = 'home' | 'map' | 'pharmacies' | 'garde' | 'doctors' | 'hospitals' | 'admin';
 
 export interface FilterState {
@@ -77,7 +35,7 @@ export interface FilterState {
   gardeDate: string; // YYYY-MM-DD
 }
 
-export type ModeratorPermission = 
+export type ModeratorPermission =
   | 'can_edit_entities'     // تعديل المنشآت
   | 'can_publish_entities'  // نشر وتفعيل الطلبات الجديدة
   | 'can_manage_garde'      // إدارة وجدولة صيدليات المناوبة

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eloued-health-cache-v3';
+const CACHE_NAME = 'eloued-health-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

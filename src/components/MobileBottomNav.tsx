@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  Home, 
-  MapPin, 
-  Clock, 
-  Stethoscope, 
+import {
+  Home,
+  MapPin,
+  Clock,
+  Stethoscope,
   Menu,
   Pill,
   ShieldAlert
@@ -26,7 +26,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <div className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white/95 backdrop-blur-lg border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.07)] pb-[env(safe-area-inset-bottom,0.25rem)] font-['Tajawal',sans-serif]">
       <div className="grid grid-cols-5 h-16 items-center px-1">
-        
+
         {/* 1. الرئيسية (Home) */}
         <button
           id="mobile-bottom-home"
@@ -77,8 +77,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         >
           <div className="relative">
             <div className={`p-1.5 rounded-2xl transition-all shadow-xs ${
-              activeTab === 'garde' 
-                ? 'bg-emerald-600 text-white scale-110 shadow-emerald-600/30' 
+              activeTab === 'garde'
+                ? 'bg-emerald-600 text-white scale-110 shadow-emerald-600/30'
                 : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
             }`}>
               <Clock className="w-5 h-5" />

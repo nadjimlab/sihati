@@ -93,7 +93,7 @@ export function checkAndNotifyGardeChanges(currentOnDutyPharmacies: Array<{ id: 
   if (!currentOnDutyPharmacies || currentOnDutyPharmacies.length === 0) return;
 
   const currentIds = currentOnDutyPharmacies.map(p => p.id).sort().join(',');
-  
+
   try {
     const lastNotifiedIds = localStorage.getItem(LAST_NOTIFIED_PHARMACIES_KEY);
 
@@ -106,7 +106,7 @@ export function checkAndNotifyGardeChanges(currentOnDutyPharmacies: Array<{ id: 
     // If IDs list changed
     if (lastNotifiedIds !== currentIds) {
       localStorage.setItem(LAST_NOTIFIED_PHARMACIES_KEY, currentIds);
-      
+
       const count = currentOnDutyPharmacies.length;
       const firstPharmacy = currentOnDutyPharmacies[0];
       const title = `🚨 تحديث قائمة صيدليات المناوبة اليوم (${count} صيدليات)`;

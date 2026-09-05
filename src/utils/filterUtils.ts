@@ -152,7 +152,7 @@ export const ALL_POPULAR_NEIGHBORHOODS: string[] = [
  */
 export function extractNeighborhoodFromAddress(address: string): string | null {
   if (!address) return null;
-  
+
   for (const n of ALL_POPULAR_NEIGHBORHOODS) {
     if (address.toLowerCase().includes(n.toLowerCase())) {
       return n;
@@ -182,8 +182,8 @@ export function getAvailableNeighborhoods(entities: HealthEntity[], selectedComm
   }
 
   // Also harvest from actual entities
-  const relevantEntities = selectedCommune === 'الكل' 
-    ? entities 
+  const relevantEntities = selectedCommune === 'الكل'
+    ? entities
     : entities.filter(e => e.commune === selectedCommune);
 
   relevantEntities.forEach(e => {
@@ -268,9 +268,9 @@ export function filterEntities(
     if (neighborhood !== 'الكل') {
       const address = (item.address || '').toLowerCase();
       const targetNeighborhood = neighborhood.toLowerCase();
-      
+
       // Check exact inclusion or normalized substring
-      const matchesNeighborhood = address.includes(targetNeighborhood) || 
+      const matchesNeighborhood = address.includes(targetNeighborhood) ||
         (targetNeighborhood.startsWith('حي ') && address.includes(targetNeighborhood.replace('حي ', ''))) ||
         (targetNeighborhood.startsWith('شارع ') && address.includes(targetNeighborhood.replace('شارع ', '')));
 

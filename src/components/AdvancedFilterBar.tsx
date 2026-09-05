@@ -1,18 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Search, 
-  Filter, 
-  MapPin, 
-  Building2, 
-  Stethoscope, 
-  Pill, 
-  Clock, 
-  ShieldAlert, 
-  X, 
-  ChevronDown, 
-  ChevronUp, 
-  RotateCcw, 
-  Check, 
+import {
+  Search,
+  Filter,
+  MapPin,
+  Building2,
+  Stethoscope,
+  Pill,
+  Clock,
+  ShieldAlert,
+  X,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Check,
   SlidersHorizontal,
   Compass,
   Phone,
@@ -22,9 +22,9 @@ import {
 } from 'lucide-react';
 import { HealthEntity, HealthEntityType } from '../types';
 import { COMMUNES, SPECIALTIES } from '../data/mockData';
-import { 
-  AdvancedFilterState, 
-  getAvailableNeighborhoods, 
+import {
+  AdvancedFilterState,
+  getAvailableNeighborhoods,
   getActiveFiltersCount,
   HEALTH_SERVICE_TYPES
 } from '../utils/filterUtils';
@@ -36,7 +36,7 @@ interface AdvancedFilterBarProps {
   entities: HealthEntity[];
   resultCount?: number;
   totalCount?: number;
-  
+
   // Customization flags per view
   hideTypeFilter?: boolean;
   hideSpecialtyFilter?: boolean;
@@ -106,7 +106,7 @@ export const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5 space-y-4 font-['Tajawal'] dir-rtl transition-all">
-      
+
       {/* Optional Custom Header Banner if title provided */}
       {title && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -126,7 +126,7 @@ export const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
 
       {/* Row 1: Primary Search Input & Key Selects & Advanced Filter Button */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
-        
+
         {/* Search Input Box */}
         <div className={`relative ${hideTypeFilter ? 'sm:col-span-6' : 'sm:col-span-5'}`}>
           <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
@@ -269,7 +269,7 @@ export const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
       {/* Expandable Advanced Filtering Drawer / Panel */}
       {isExpanded && (
         <div className="pt-3 border-t border-slate-200/90 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 bg-slate-50/70 p-4 rounded-xl border">
-          
+
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 border-b border-slate-200/70 pb-2">
             <div className="flex items-center gap-1.5">
               <SlidersHorizontal className="w-4 h-4 text-blue-600" />
@@ -287,7 +287,7 @@ export const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            
+
             {/* Specialty / Medical Service Filter */}
             {!hideSpecialtyFilter && (
               <div>
@@ -351,7 +351,7 @@ export const AdvancedFilterBar: React.FC<AdvancedFilterBarProps> = ({
                 محددات وخدمات إضافية سريعة:
               </span>
               <div className="flex flex-wrap gap-2">
-                
+
                 {/* On-Duty Toggle */}
                 {!hideGardeToggle && (
                   <button

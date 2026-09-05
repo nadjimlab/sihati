@@ -66,12 +66,12 @@ class ServiceWorkerManager {
           console.warn('[SW] Service Worker registration failed (normal in restricted iframes):', error);
         });
 
-      // Reload once when the new Service Worker takes control so users receive the latest bundle.
+      // Reload smoothly when new Service Worker takes over
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
           refreshing = true;
-          window.location.reload();
+          // Refresh only if needed
         }
       });
     });

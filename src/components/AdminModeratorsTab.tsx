@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  UserCheck, 
-  UserPlus, 
-  ShieldCheck, 
-  ShieldAlert, 
-  KeyRound, 
-  Lock, 
-  Unlock, 
-  Edit3, 
-  Trash2, 
-  CheckCircle2, 
-  X, 
-  AlertCircle, 
-  Phone, 
-  Mail, 
-  Clock, 
-  Eye, 
+import {
+  UserCheck,
+  UserPlus,
+  ShieldCheck,
+  ShieldAlert,
+  KeyRound,
+  Lock,
+  Unlock,
+  Edit3,
+  Trash2,
+  CheckCircle2,
+  X,
+  AlertCircle,
+  Phone,
+  Mail,
+  Clock,
+  Eye,
   EyeOff,
   Sparkles,
   ToggleLeft,
@@ -27,13 +27,13 @@ import {
   Search
 } from 'lucide-react';
 import { ModeratorUser, ModeratorPermission } from '../types';
-import { 
-  getLocalModerators, 
-  subscribeToModerators, 
-  addModerator, 
-  updateModerator, 
+import {
+  getLocalModerators,
+  subscribeToModerators,
+  addModerator,
+  updateModerator,
   deleteModerator,
-  ALL_MODERATOR_PERMISSIONS 
+  ALL_MODERATOR_PERMISSIONS
 } from '../utils/moderatorManager';
 
 interface AdminModeratorsTabProps {
@@ -51,7 +51,6 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSavingMod, setIsSavingMod] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -140,81 +139,65 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
 
     const cleanUsername = formData.username.trim().toLowerCase().replace(/\s+/g, '_');
 
-    setIsSavingMod(true);
-    try {
-      if (editingMod) {
-        const updated: ModeratorUser = {
-          ...editingMod,
-          name: formData.name.trim(),
-          username: cleanUsername,
-          password: formData.password.trim(),
-          email: formData.email.trim() || undefined,
-          phone: formData.phone.trim() || undefined,
-          permissions: formData.permissions,
-          status: formData.status,
-          notes: formData.notes.trim() || undefined,
-        };
-        await updateModerator(updated);
-        onShowToast(`تم تحديث بيانات وصلاحيات المشرف "${updated.name}" بنجاح على جميع الأجهزة!`, 'success');
-      } else {
-        // Check duplicate username
-        if (moderators.some(m => m.username.toLowerCase() === cleanUsername)) {
-          onShowToast('اسم المستخدم هذا موجود مسبقاً، يرجى اختيار اسم مستخدم آخر.', 'error');
-          return;
-        }
-
-        const newMod: ModeratorUser = {
-          id: `mod_${Date.now()}`,
-          name: formData.name.trim(),
-          username: cleanUsername,
-          password: formData.password.trim(),
-          email: formData.email.trim() || undefined,
-          phone: formData.phone.trim() || undefined,
-          permissions: formData.permissions,
-          status: formData.status,
-          createdAt: new Date().toISOString(),
-          notes: formData.notes.trim() || undefined,
-        };
-        await addModerator(newMod);
-        onShowToast(`تمت إضافة المشرف "${newMod.name}" بنجاح، وأصبح بإمكانه الدخول من أي هاتف!`, 'success');
+    if (editingMod) {
+      const updated: ModeratorUser = {
+        ...editingMod,
+        name: formData.name.trim(),
+        username: cleanUsername,
+        password: formData.password.trim(),
+        email: formData.email.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        permissions: formData.permissions,
+        status: formData.status,
+        notes: formData.notes.trim() || undefined,
+      };
+      await updateModerator(updated);
+      onShowToast(`تم تحديث بيانات وصلاحيات المشرف "${updated.name}" بنجاح!`, 'success');
+    } else {
+      // Check duplicate username
+      if (moderators.some(m => m.username.toLowerCase() === cleanUsername)) {
+        onShowToast('اسم المستخدم هذا موجود مسبقاً، يرجى اختيار اسم مستخدم آخر.', 'error');
+        return;
       }
 
-      setIsAddModalOpen(false);
-    } catch (err: any) {
-      // Real cloud-save failure: keep the modal open so the admin can retry
-      onShowToast(err?.message || 'فشل حفظ بيانات المشرف. تحقق من اتصال الإنترنت وحاول مجدداً.', 'error');
-    } finally {
-      setIsSavingMod(false);
+      const newMod: ModeratorUser = {
+        id: `mod_${Date.now()}`,
+        name: formData.name.trim(),
+        username: cleanUsername,
+        password: formData.password.trim(),
+        email: formData.email.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        permissions: formData.permissions,
+        status: formData.status,
+        createdAt: new Date().toISOString(),
+        notes: formData.notes.trim() || undefined,
+      };
+      await addModerator(newMod);
+      onShowToast(`تمت إضافة المشرف "${newMod.name}" وتفعيل صلاحياته بنجاح!`, 'success');
     }
+
+    setIsAddModalOpen(false);
   };
 
   const handleToggleStatus = async (mod: ModeratorUser) => {
     const updatedStatus: 'active' | 'suspended' = mod.status === 'active' ? 'suspended' : 'active';
-    try {
-      await updateModerator({
-        ...mod,
-        status: updatedStatus,
-      });
-      onShowToast(
-        updatedStatus === 'active' 
-          ? `تم تفعيل حساب المشرف "${mod.name}" على جميع الأجهزة` 
-          : `تم تجميد حساب المشرف "${mod.name}" مؤقتاً على جميع الأجهزة`,
-        'info'
-      );
-    } catch (err: any) {
-      onShowToast(err?.message || 'فشل تحديث حالة المشرف. تحقق من اتصال الإنترنت.', 'error');
-    }
+    await updateModerator({
+      ...mod,
+      status: updatedStatus,
+    });
+    onShowToast(
+      updatedStatus === 'active'
+        ? `تم تفعيل حساب المشرف "${mod.name}"`
+        : `تم تجميد حساب المشرف "${mod.name}" مؤقتاً`,
+      'info'
+    );
   };
 
   const handleConfirmDelete = async () => {
     if (deletingId) {
-      try {
-        await deleteModerator(deletingId);
-        onShowToast('تم حذف المشرف بنجاح من جميع الأجهزة', 'info');
-        setDeletingId(null);
-      } catch (err: any) {
-        onShowToast(err?.message || 'فشل حذف المشرف. تحقق من اتصال الإنترنت.', 'error');
-      }
+      await deleteModerator(deletingId);
+      onShowToast('تم حذف المشرف بنجاح', 'info');
+      setDeletingId(null);
     }
   };
 
@@ -235,7 +218,7 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      
+
       {/* Header Banner */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -257,16 +240,14 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
           </div>
         </div>
 
-        {/* Add Moderator Button - Super Admin only */}
-        {isSuperAdmin && (
-          <button
-            onClick={handleOpenAdd}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors self-start sm:self-auto"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>إضافة مشرف جديد</span>
-          </button>
-        )}
+        {/* Add Moderator Button */}
+        <button
+          onClick={handleOpenAdd}
+          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors self-start sm:self-auto"
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>إضافة مشرف جديد</span>
+        </button>
       </div>
 
       {/* Roles & Permissions Explanation Card */}
@@ -365,20 +346,18 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
                       </div>
                     </div>
 
-                    {isSuperAdmin && (
-                      <button
-                        onClick={() => handleToggleStatus(mod)}
-                        className={`text-xs px-3 py-1.5 rounded-xl font-black transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs ${
-                          mod.status === 'active'
-                            ? 'bg-emerald-50 text-emerald-950 hover:bg-emerald-100 border border-emerald-300'
-                            : 'bg-slate-200 text-slate-950 hover:bg-slate-300 border border-slate-300'
-                        }`}
-                        title={mod.status === 'active' ? 'تجميد الحساب' : 'تفعيل الحساب'}
-                      >
-                        {mod.status === 'active' ? <Unlock className="w-3.5 h-3.5 text-emerald-700" /> : <Lock className="w-3.5 h-3.5 text-slate-700" />}
-                        <span className="text-xs">{mod.status === 'active' ? 'تجميد' : 'تفعيل'}</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleToggleStatus(mod)}
+                      className={`text-xs px-3 py-1.5 rounded-xl font-black transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs ${
+                        mod.status === 'active'
+                          ? 'bg-emerald-50 text-emerald-950 hover:bg-emerald-100 border border-emerald-300'
+                          : 'bg-slate-200 text-slate-950 hover:bg-slate-300 border border-slate-300'
+                      }`}
+                      title={mod.status === 'active' ? 'تجميد الحساب' : 'تفعيل الحساب'}
+                    >
+                      {mod.status === 'active' ? <Unlock className="w-3.5 h-3.5 text-emerald-700" /> : <Lock className="w-3.5 h-3.5 text-slate-700" />}
+                      <span className="text-xs">{mod.status === 'active' ? 'تجميد' : 'تفعيل'}</span>
+                    </button>
                   </div>
 
                   {/* Credentials / Details */}
@@ -440,26 +419,24 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
                   )}
                 </div>
 
-                {/* Actions Footer - Super Admin only */}
-                {isSuperAdmin && (
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 mt-2">
-                    <button
-                      onClick={() => handleOpenEdit(mod)}
-                      className="px-3.5 py-2 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-800 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-xs"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>تعديل الصلاحيات</span>
-                    </button>
+                {/* Actions Footer */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 mt-2">
+                  <button
+                    onClick={() => handleOpenEdit(mod)}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-800 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>تعديل الصلاحيات</span>
+                  </button>
 
-                    <button
-                      onClick={() => setDeletingId(mod.id)}
-                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                      title="حذف المشرف"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                  <button
+                    onClick={() => setDeletingId(mod.id)}
+                    className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                    title="حذف المشرف"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -467,14 +444,12 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
           <div className="py-10 text-center text-slate-400 text-xs space-y-2">
             <UserCheck className="w-8 h-8 mx-auto text-slate-300" />
             <p>لا يوجد مشرفين مسجلين بعد.</p>
-            {isSuperAdmin && (
-              <button
-                onClick={handleOpenAdd}
-                className="text-indigo-600 hover:underline font-bold text-xs"
-              >
-                + اضغط هنا لإضافة أول مشرف للموقع
-              </button>
-            )}
+            <button
+              onClick={handleOpenAdd}
+              className="text-indigo-600 hover:underline font-bold text-xs"
+            >
+              + اضغط هنا لإضافة أول مشرف للموقع
+            </button>
           </div>
         )}
       </div>
@@ -483,7 +458,7 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs font-['Tajawal'] dir-rtl">
           <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden text-right max-h-[90vh] flex flex-col">
-            
+
             {/* Modal Header */}
             <div className="bg-gradient-to-l from-indigo-950 to-slate-900 text-white p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -506,8 +481,8 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSaveModerator} noValidate className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
-              
+            <form onSubmit={handleSaveModerator} className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+
               {/* Name */}
               <div className="space-y-1.5">
                 <label className="block text-xs sm:text-sm font-black text-slate-900">
@@ -654,10 +629,9 @@ export const AdminModeratorsTab: React.FC<AdminModeratorsTabProps> = ({
               <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
                 <button
                   type="submit"
-                  disabled={isSavingMod}
-                  className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md active:scale-95"
                 >
-                  {isSavingMod ? 'جاري الحفظ...' : (editingMod ? 'حفظ التعديلات' : 'إضافة المشرف الآن')}
+                  {editingMod ? 'حفظ التعديلات' : 'إضافة المشرف الآن'}
                 </button>
                 <button
                   type="button"

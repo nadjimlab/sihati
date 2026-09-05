@@ -12,7 +12,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-      <div 
+      <div
         className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
@@ -46,7 +46,7 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose 
 
           <div className="space-y-2 pt-1">
             {EMERGENCY_NUMBERS.map((item, idx) => (
-              <div 
+              <div
                 key={idx}
                 className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50/20 transition-all group"
               >

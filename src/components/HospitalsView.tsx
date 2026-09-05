@@ -9,10 +9,10 @@ interface HospitalsViewProps {
   facilities: HealthEntity[];
   onOpenAddModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
-  onSuggestEdit?: (entity: HealthEntity) => void;
+  onShare?: (entity: HealthEntity) => void;
 }
 
-export const HospitalsView: React.FC<HospitalsViewProps> = ({ facilities, onOpenAddModal, onViewOnMap, onSuggestEdit }) => {
+export const HospitalsView: React.FC<HospitalsViewProps> = ({ facilities, onOpenAddModal, onViewOnMap, onShare }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
 
   const filteredFacilities = useMemo(() => {
@@ -88,7 +88,7 @@ export const HospitalsView: React.FC<HospitalsViewProps> = ({ facilities, onOpen
               key={facility.id}
               item={facility}
               onViewOnMap={onViewOnMap}
-              onSuggestEdit={onSuggestEdit}
+              onShare={onShare}
             />
           ))}
         </div>

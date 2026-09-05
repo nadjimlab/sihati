@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { Pill, Plus } from 'lucide-react';
+import { Pill, Plus, Download, Printer } from 'lucide-react';
 import { HealthEntity } from '../types';
 import { DirectoryCard } from './DirectoryCard';
 import { AdvancedFilterBar } from './AdvancedFilterBar';
 import { AdvancedFilterState, INITIAL_FILTER_STATE, filterEntities } from '../utils/filterUtils';
+import { exportEntitiesToCSV, exportEntitiesToPrintableHTML } from '../utils/exportUtils';
 
 interface PharmaciesViewProps {
   pharmacies: HealthEntity[];
   todayOnDutyIds: string[];
   onOpenAddModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
-  onSuggestEdit?: (entity: HealthEntity) => void;
+  onShare?: (entity: HealthEntity) => void;
 }
 
 export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
@@ -18,7 +19,7 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
   todayOnDutyIds,
   onOpenAddModal,
   onViewOnMap,
-  onSuggestEdit,
+  onShare,
 }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
 
@@ -52,7 +53,27 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="download-pharmacies-csv-btn"
+              onClick={() => exportEntitiesToCSV(filteredPharmacies, 'دليل_صيدليات_ولاية_الوادي.csv')}
+              title="تحميل الجدول بتنسيق Excel / CSV"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
+            >
+              <Download className="w-4 h-4" />
+              <span>تحميل Excel (CSV)</span>
+            </button>
+
+            <button
+              id="print-pharmacies-btn"
+              onClick={() => exportEntitiesToPrintableHTML(filteredPharmacies, 'دليل صيدليات ولاية الوادي')}
+              title="طباعة أو حفظ كملف PDF"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
+            >
+              <Printer className="w-4 h-4" />
+              <span>طباعة / PDF</span>
+            </button>
+
             {onOpenAddModal && (
               <button
                 id="pharmacies-add-btn"
@@ -92,7 +113,7 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
               item={pharmacy}
               isOnDuty={todayOnDutyIds.includes(pharmacy.id)}
               onViewOnMap={onViewOnMap}
-              onSuggestEdit={onSuggestEdit}
+              onShare={onShare}
             />
           ))}
         </div>

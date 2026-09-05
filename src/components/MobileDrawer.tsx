@@ -1,20 +1,21 @@
 import React, { useEffect } from 'react';
-import { 
-  X, 
-  Home, 
-  MapPin, 
-  Clock, 
-  Pill, 
-  Stethoscope, 
-  Building2, 
-  ShieldAlert, 
-  Plus, 
-  Smartphone, 
-  HeartPulse, 
+import {
+  X,
+  Home,
+  MapPin,
+  Clock,
+  Pill,
+  Stethoscope,
+  Building2,
+  ShieldAlert,
+  Plus,
+  Smartphone,
+  HeartPulse,
   ChevronLeft,
   Navigation,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Share2
 } from 'lucide-react';
 import { ActiveTab } from '../types';
 
@@ -26,6 +27,7 @@ interface MobileDrawerProps {
   onOpenEmergencyModal: () => void;
   onOpenAddModal: () => void;
   onOpenInstallModal: () => void;
+  onOpenShare?: () => void;
   onDutyCountToday: number;
 }
 
@@ -37,6 +39,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onOpenEmergencyModal,
   onOpenAddModal,
   onOpenInstallModal,
+  onOpenShare,
   onDutyCountToday,
 }) => {
   // Prevent background scrolling when drawer is open
@@ -126,7 +129,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-hidden font-['Tajawal'] dir-rtl">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
         onClick={onClose}
         aria-hidden="true"
@@ -135,7 +138,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       {/* Drawer Container (Slides in from Right in RTL) */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-xs sm:max-w-sm bg-white shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-250">
-          
+
           {/* Drawer Top / Header */}
           <div className="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white p-5 shrink-0">
             <div className="flex items-center justify-between">
@@ -240,8 +243,31 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             })}
           </div>
 
-          {/* Drawer Bottom / Install as App CTA & Version */}
-          <div className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 space-y-3">
+          {/* Drawer Bottom / Share & Install CTA & Version */}
+          <div className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 space-y-2.5">
+            {/* Share App Button */}
+            {onOpenShare && (
+              <button
+                id="drawer-share-app-btn"
+                onClick={() => {
+                  onClose();
+                  onOpenShare();
+                }}
+                className="w-full p-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/90 flex items-center justify-between shadow-2xs transition-all active:scale-98"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-blue-600 text-white">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-bold block text-blue-900">نشر ومشاركة التطبيق</span>
+                    <span className="text-[10px] text-blue-700 block">واتساب، فيسبوك، إنستغرام وتطبيقات أخرى</span>
+                  </div>
+                </div>
+                <ChevronLeft className="w-4 h-4 text-blue-500" />
+              </button>
+            )}
+
             {/* Install PWA Button */}
             <button
               id="drawer-pwa-install-btn"

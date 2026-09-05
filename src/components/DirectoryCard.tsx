@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  Phone, 
-  MapPin, 
-  Clock, 
-  Navigation, 
-  Check, 
-  Copy, 
-  ShieldAlert, 
+import {
+  Phone,
+  MapPin,
+  Clock,
+  Navigation,
+  Check,
+  Copy,
+  ShieldAlert,
   Calendar,
   Building2,
   Pill,
   Stethoscope,
   Sparkles,
   ExternalLink,
-  Pencil
+  Share2
 } from 'lucide-react';
 import { HealthEntity } from '../types';
 import { ARABIC_DAYS } from '../data/mockData';
@@ -22,14 +22,14 @@ interface DirectoryCardProps {
   item: HealthEntity;
   isOnDuty?: boolean;
   onViewOnMap?: (item: HealthEntity) => void;
-  onSuggestEdit?: (item: HealthEntity) => void;
+  onShare?: (item: HealthEntity) => void;
 }
 
-export const DirectoryCard: React.FC<DirectoryCardProps> = ({ 
-  item, 
+export const DirectoryCard: React.FC<DirectoryCardProps> = ({
+  item,
   isOnDuty = false,
   onViewOnMap,
-  onSuggestEdit
+  onShare
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -93,11 +93,11 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
   };
 
   return (
-    <div 
-      id={`card-${item.id}`} 
+    <div
+      id={`card-${item.id}`}
       className={`bg-white rounded-2xl border transition-all duration-200 p-5 flex flex-col justify-between relative group hover:shadow-lg ${
-        isOnDuty 
-          ? 'border-emerald-400/80 shadow-xs ring-2 ring-emerald-500/20 bg-gradient-to-b from-emerald-50/20 to-white' 
+        isOnDuty
+          ? 'border-emerald-400/80 shadow-xs ring-2 ring-emerald-500/20 bg-gradient-to-b from-emerald-50/20 to-white'
           : 'border-slate-200/90 hover:border-blue-300 shadow-2xs'
       }`}
     >
@@ -106,7 +106,7 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3.5">
           <div className="flex flex-wrap items-center gap-1.5">
             {getTypeBadge()}
-            
+
             <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100/90 text-slate-700 border border-slate-200/80">
               <MapPin className="w-3 h-3 ml-1 text-slate-500 shrink-0" />
               {item.commune}
@@ -166,8 +166,8 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
                 <div>
                   <span className="font-bold text-emerald-900">أيام المناوبة الدورية: </span>
                   <span className="text-emerald-800 font-medium">
-                    {item.garde_days.length === 7 
-                      ? 'مناوبة يومية مستمرة' 
+                    {item.garde_days.length === 7
+                      ? 'مناوبة يومية مستمرة'
                       : item.garde_days.map(d => ARABIC_DAYS[d]).join(' • ')}
                   </span>
                 </div>
@@ -213,8 +213,35 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
           </button>
         </div>
 
-        {/* Navigation Map & Direct Call */}
-        <div className="flex items-center gap-2">
+        {/* Actions: Share, Navigation Map & Direct Call */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Share Button (WhatsApp, Facebook, Instagram...) */}
+          <button
+            id={`share-btn-${item.id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onShare) {
+                onShare(item);
+              } else if (typeof navigator !== 'undefined' && navigator.share) {
+                navigator.share({
+                  title: `${item.name} - دليل الصحة لولاية الوادي`,
+                  text: `${item.name} (${item.type}) - ${item.commune} - هاتف: ${item.phone}`,
+                  url: window.location.href,
+                }).catch(() => {});
+              } else {
+                const text = encodeURIComponent(`🏥 ${item.name} (${item.type})\n📍 ${item.commune} - ${item.address}\n📞 ${item.phone}\n${window.location.href}`);
+                window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+              }
+            }}
+            type="button"
+            title="نشر ومشاركة عبر واتساب، فيسبوك، إنستغرام..."
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-all inline-flex items-center justify-center border border-slate-200/80 active:scale-95 shadow-2xs group"
+          >
+            <Share2 className="w-4 h-4 text-slate-600 group-hover:text-blue-600" />
+            <span className="sr-only">مشاركة</span>
+          </button>
+
           {onViewOnMap ? (
             <button
               id={`map-btn-${item.id}`}
@@ -243,7 +270,7 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
           <a
             id={`call-btn-${item.id}`}
             href={`tel:${item.phone.replace(/\s+/g, '')}`}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-emerald-600/25 hover:shadow-lg hover:shadow-emerald-600/35 active:scale-95 transition-all border border-emerald-500/40"
+            className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-emerald-600/25 hover:shadow-lg hover:shadow-emerald-600/35 active:scale-95 transition-all border border-emerald-500/40"
           >
             <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               <Phone className="w-3 h-3 text-white" />
@@ -252,23 +279,6 @@ export const DirectoryCard: React.FC<DirectoryCardProps> = ({
           </a>
         </div>
       </div>
-
-      {/* Suggest an edit to this entity's info */}
-      {onSuggestEdit && (
-        <button
-          id={`suggest-edit-${item.id}`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onSuggestEdit(item);
-          }}
-          title="اقتراح تعديل على هذه المعلومات"
-          className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          <span>هل المعلومات غير صحيحة؟ اقترح تعديلاً</span>
-        </button>
-      )}
     </div>
   );
 };

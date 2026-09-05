@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, 
-  Users, 
-  Eye, 
-  Smartphone, 
-  Monitor, 
-  Tablet, 
-  Calendar, 
-  RefreshCw, 
-  Download, 
-  Trash2, 
-  Activity, 
-  Globe, 
-  Compass, 
-  TrendingUp, 
+import {
+  BarChart3,
+  Users,
+  Eye,
+  Smartphone,
+  Monitor,
+  Tablet,
+  Calendar,
+  RefreshCw,
+  Download,
+  Trash2,
+  Activity,
+  Globe,
+  Compass,
+  TrendingUp,
   Sparkles,
   Layers,
   Clock,
@@ -23,10 +23,10 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { SiteAnalytics, VisitEvent } from '../types';
-import { 
-  getLocalAnalytics, 
-  subscribeToAnalytics, 
-  resetAnalyticsInCloud 
+import {
+  getLocalAnalytics,
+  subscribeToAnalytics,
+  resetAnalyticsInCloud
 } from '../utils/analyticsManager';
 
 interface AdminAnalyticsTabProps {
@@ -126,7 +126,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      
+
       {/* Top Header & Action Controls */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -184,7 +184,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
 
       {/* 4 Main Metric KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
+
         {/* Card 1: Total Visits */}
         <div className="bg-gradient-to-br from-blue-900 to-indigo-950 text-white rounded-3xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -263,7 +263,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
 
       {/* Grid: Daily Visits Chart + Popular Tabs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Daily Visits Trend & Breakdown (2 Cols) */}
         <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-slate-200 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -331,8 +331,8 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                     <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 flex">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isToday 
-                            ? 'bg-gradient-to-l from-emerald-500 to-teal-400 shadow-xs' 
+                          isToday
+                            ? 'bg-gradient-to-l from-emerald-500 to-teal-400 shadow-xs'
                             : 'bg-gradient-to-l from-blue-600 to-indigo-500'
                         }`}
                         style={{ width: `${Math.max(pct, 4)}%` }}

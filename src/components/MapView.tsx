@@ -1,27 +1,27 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  MapContainer, 
-  TileLayer, 
-  Marker, 
-  Popup, 
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
   useMap,
   Circle,
   Polyline
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { 
-  MapPin, 
-  Navigation, 
-  Phone, 
-  Clock, 
-  Crosshair, 
-  Search, 
-  Filter, 
-  Building2, 
-  Stethoscope, 
-  Pill, 
-  ShieldAlert, 
+import {
+  MapPin,
+  Navigation,
+  Phone,
+  Clock,
+  Crosshair,
+  Search,
+  Filter,
+  Building2,
+  Stethoscope,
+  Pill,
+  ShieldAlert,
   ExternalLink,
   RotateCcw,
   Check,
@@ -157,11 +157,11 @@ interface MapViewProps {
   onOpenAddModal?: () => void;
 }
 
-export const MapView: React.FC<MapViewProps> = ({ 
-  entities, 
-  todayOnDutyIds, 
+export const MapView: React.FC<MapViewProps> = ({
+  entities,
+  todayOnDutyIds,
   focusedEntity,
-  onOpenAddModal 
+  onOpenAddModal
 }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
   const [selectedEntity, setSelectedEntity] = useState<HealthEntity | null>(null);

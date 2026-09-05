@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Search, 
-  Clock, 
-  Pill, 
-  Stethoscope, 
-  Building2, 
-  ArrowLeft, 
-  MapPin, 
-  ShieldAlert, 
-  PhoneCall, 
+import {
+  Search,
+  Clock,
+  Pill,
+  Stethoscope,
+  Building2,
+  ArrowLeft,
+  MapPin,
+  ShieldAlert,
+  PhoneCall,
   Activity,
   Plus,
   Navigation,
@@ -17,7 +17,11 @@ import {
   Smartphone,
   ShieldCheck,
   Compass,
-  HeartHandshake
+  HeartHandshake,
+  Share2,
+  MessageCircle,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 import { HealthEntity, ActiveTab } from '../types';
 import { ARABIC_DAYS, COMMUNES } from '../data/mockData';
@@ -33,7 +37,8 @@ interface HomeViewProps {
   onOpenAddModal?: () => void;
   onOpenInstallModal?: () => void;
   onViewOnMap?: (entity: HealthEntity) => void;
-  onSuggestEdit?: (entity: HealthEntity) => void;
+  onShare?: (entity: HealthEntity) => void;
+  onShareApp?: () => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -44,7 +49,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenAddModal,
   onOpenInstallModal,
   onViewOnMap,
-  onSuggestEdit,
+  onShare,
+  onShareApp,
 }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
 
@@ -92,7 +98,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="absolute -bottom-24 -left-24 w-72 sm:w-96 h-72 sm:h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-4xl mx-auto space-y-4 sm:space-y-6">
-          
+
           {/* Top Status Badges Row */}
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2">
             <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-800/90 text-[11px] sm:text-xs font-bold text-blue-300 border border-slate-700 shadow-xs">
@@ -125,7 +131,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Mobile-Optimized Quick Action & Category Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto pt-1">
             {/* Garde Card */}
-            <div 
+            <div
               id="home-hero-garde-btn"
               onClick={() => setActiveTab('garde')}
               className="bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/50 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
@@ -140,7 +146,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Pharmacies Card */}
-            <div 
+            <div
               id="home-hero-pharmacies-btn"
               onClick={() => setActiveTab('pharmacies')}
               className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
@@ -155,7 +161,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Doctors Card */}
-            <div 
+            <div
               id="home-hero-doctors-btn"
               onClick={() => setActiveTab('doctors')}
               className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
@@ -170,7 +176,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {/* Hospitals & Facilities Card */}
-            <div 
+            <div
               id="home-hero-hospitals-btn"
               onClick={() => setActiveTab('hospitals')}
               className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all hover:scale-102 active:scale-95 text-right flex items-center gap-2.5 sm:gap-3 group shadow-xs"
@@ -290,7 +296,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   item={item}
                   isOnDuty={todayOnDutyPharmacies.some((p) => p.id === item.id)}
                   onViewOnMap={onViewOnMap}
-                  onSuggestEdit={onSuggestEdit}
+                  onShare={onShare}
                 />
               ))}
             </div>
@@ -346,7 +352,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         {/* 4 Feature Service Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          
+
           {/* Service 1: Garde Pharmacies */}
           <div
             id="home-btn-garde"
@@ -542,7 +548,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 item={pharmacy}
                 isOnDuty={true}
                 onViewOnMap={onViewOnMap}
-                onSuggestEdit={onSuggestEdit}
+                onShare={onShare}
               />
             ))}
           </div>
@@ -595,6 +601,76 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <p className="text-xs text-slate-500 leading-relaxed">
               يمكن تثبيت المنصة على هاتفك كتطبيق رئيسي يعمل بسلاسة وسرعة فائقة في أي وقت.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 6.5. Social Sharing & Broadcast Section (ميزة النشر في واتساب، فيسبوك، إنستغرام) */}
+      <section className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="text-right space-y-2 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-black text-amber-200">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>ميزة النشر والمشاركة في جميع التطبيقات</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              انشر الدليل وشارك المعلومة الصحية مع أهلك في ولاية الوادي
+            </h3>
+            <p className="text-xs sm:text-sm text-blue-100 leading-relaxed font-medium">
+              ساهم في نشر جدول الصيدليات المناوبة وأرقام الأطباء والاستعجالات لأقاربك وأصدقائك عبر مجموعات الواتساب ومنشورات الفيسبوك وستوري الإنستغرام.
+            </p>
+          </div>
+
+          {/* Social Share Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto shrink-0 justify-start lg:justify-end">
+            <button
+              id="home-share-whatsapp-btn"
+              onClick={() => {
+                if (onShareApp) onShareApp();
+              }}
+              className="px-4 py-3 rounded-2xl bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-xs sm:text-sm shadow-md flex items-center gap-2 active:scale-95 transition-all"
+              title="مشاركة عبر واتساب"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>واتساب</span>
+            </button>
+
+            <button
+              id="home-share-facebook-btn"
+              onClick={() => {
+                if (onShareApp) onShareApp();
+              }}
+              className="px-4 py-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-extrabold text-xs sm:text-sm shadow-md flex items-center gap-2 active:scale-95 transition-all"
+              title="مشاركة عبر فيسبوك"
+            >
+              <Facebook className="w-4 h-4" />
+              <span>فيسبوك</span>
+            </button>
+
+            <button
+              id="home-share-instagram-btn"
+              onClick={() => {
+                if (onShareApp) onShareApp();
+              }}
+              className="px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 text-white font-extrabold text-xs sm:text-sm shadow-md flex items-center gap-2 active:scale-95 transition-all"
+              title="مشاركة عبر إنستغرام"
+            >
+              <Instagram className="w-4 h-4" />
+              <span>إنستغرام</span>
+            </button>
+
+            <button
+              id="home-share-all-btn"
+              onClick={() => {
+                if (onShareApp) onShareApp();
+              }}
+              className="px-5 py-3 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-extrabold text-xs sm:text-sm shadow-md flex items-center gap-2 active:scale-95 transition-all"
+              title="مشاركة عبر جميع التطبيقات"
+            >
+              <Share2 className="w-4 h-4 text-blue-600" />
+              <span>جميع التطبيقات</span>
+            </button>
           </div>
         </div>
       </section>

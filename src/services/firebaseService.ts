@@ -1,28 +1,27 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
   writeBatch,
   getDoc
 } from 'firebase/firestore';
-import { 
-  signInWithPopup, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  User 
+import {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User
 } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from '../lib/firebase';
-import { HealthEntity, EditSuggestion } from '../types';
+import { HealthEntity } from '../types';
 import { HEALTH_DATA } from '../data/mockData';
 
 const ENTITIES_COLLECTION = 'entities';
-const EDIT_SUGGESTIONS_COLLECTION = 'editSuggestions';
 
 /**
  * Real-time subscription to all Health Entities in Firestore
@@ -89,7 +88,7 @@ export function subscribeToHealthEntities(
 export async function addEntityToFirestore(entity: HealthEntity): Promise<void> {
   const entityId = entity.id || `entity-${Date.now()}`;
   const docRef = doc(db, ENTITIES_COLLECTION, entityId);
-  
+
   const payload: Record<string, any> = {
     name: entity.name,
     type: entity.type,
@@ -185,177 +184,54 @@ export async function deleteEntityFromFirestore(entityId: string): Promise<void>
 }
 
 /**
- * Real-time subscription to all visitor-submitted edit suggestions in Firestore
- */
-export function subscribeToEditSuggestions(
-  onSuccess: (suggestions: EditSuggestion[]) => void,
-  onError?: (error: any) => void
-) {
-  const colRef = collection(db, EDIT_SUGGESTIONS_COLLECTION);
-  return onSnapshot(
-    colRef,
-    (snapshot) => {
-      const suggestions: EditSuggestion[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        suggestions.push({
-          id: docSnap.id,
-          entityId: data.entityId || '',
-          entityName: data.entityName || '',
-          entityType: data.entityType || 'صيدلية',
-          changes: data.changes || {},
-          originalValues: data.originalValues || {},
-          reporterNote: data.reporterNote || undefined,
-          reporterContact: data.reporterContact || undefined,
-          status: data.status || 'pending',
-          submittedAt: data.submittedAt || new Date().toISOString(),
-          reviewedAt: data.reviewedAt || undefined,
-          reviewedBy: data.reviewedBy || undefined,
-          rejectionReason: data.rejectionReason || undefined,
-        });
-      });
-      // Newest submissions first
-      suggestions.sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
-      onSuccess(suggestions);
-    },
-    (error) => {
-      handleFirestoreError(error, OperationType.LIST, EDIT_SUGGESTIONS_COLLECTION);
-      if (onError) onError(error);
-    }
-  );
-}
-
-/**
- * Submit a new visitor edit-suggestion for review. Always created as 'pending'
- * and never modifies the actual public entity by itself.
- */
-export async function submitEditSuggestionToFirestore(suggestion: EditSuggestion): Promise<void> {
-  const suggestionId = suggestion.id || `suggestion-${Date.now()}`;
-  const docRef = doc(db, EDIT_SUGGESTIONS_COLLECTION, suggestionId);
-
-  const payload: Record<string, any> = {
-    entityId: suggestion.entityId,
-    entityName: suggestion.entityName,
-    entityType: suggestion.entityType,
-    changes: suggestion.changes || {},
-    originalValues: suggestion.originalValues || {},
-    status: 'pending',
-    submittedAt: suggestion.submittedAt || new Date().toISOString(),
-  };
-
-  if (suggestion.reporterNote) payload.reporterNote = suggestion.reporterNote;
-  if (suggestion.reporterContact) payload.reporterContact = suggestion.reporterContact;
-
-  try {
-    await setDoc(docRef, payload);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, `${EDIT_SUGGESTIONS_COLLECTION}/${suggestionId}`);
-  }
-}
-
-/**
- * Approve a pending edit suggestion: applies the proposed changes to the
- * target entity, then marks the suggestion as approved.
- */
-export async function approveEditSuggestionInFirestore(
-  suggestion: EditSuggestion,
-  reviewerName?: string
-): Promise<void> {
-  const entityDocRef = doc(db, ENTITIES_COLLECTION, suggestion.entityId);
-  const suggestionDocRef = doc(db, EDIT_SUGGESTIONS_COLLECTION, suggestion.id);
-
-  try {
-    await setDoc(
-      entityDocRef,
-      { ...suggestion.changes, updatedAt: new Date().toISOString() },
-      { merge: true }
-    );
-    await updateDoc(suggestionDocRef, {
-      status: 'approved',
-      reviewedAt: new Date().toISOString(),
-      reviewedBy: reviewerName || 'المشرف',
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `${EDIT_SUGGESTIONS_COLLECTION}/${suggestion.id}`);
-  }
-}
-
-/**
- * Reject a pending edit suggestion without applying any changes to the entity.
- */
-export async function rejectEditSuggestionInFirestore(
-  suggestionId: string,
-  reviewerName?: string,
-  rejectionReason?: string
-): Promise<void> {
-  const docRef = doc(db, EDIT_SUGGESTIONS_COLLECTION, suggestionId);
-  try {
-    await updateDoc(docRef, {
-      status: 'rejected',
-      reviewedAt: new Date().toISOString(),
-      reviewedBy: reviewerName || 'المشرف',
-      ...(rejectionReason ? { rejectionReason } : {}),
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `${EDIT_SUGGESTIONS_COLLECTION}/${suggestionId}`);
-  }
-}
-
-/**
- * Permanently delete an edit suggestion document (e.g. cleanup of old/reviewed entries)
- */
-export async function deleteEditSuggestionFromFirestore(suggestionId: string): Promise<void> {
-  const docRef = doc(db, EDIT_SUGGESTIONS_COLLECTION, suggestionId);
-  try {
-    await deleteDoc(docRef);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `${EDIT_SUGGESTIONS_COLLECTION}/${suggestionId}`);
-  }
-}
-
-/**
- * Seed initial mock dataset into Firestore if database collection is empty
+ * Seed initial mock dataset into Firestore if database collection is empty or upon admin synchronization
  */
 export async function syncInitialDataToFirestore(customEntities?: HealthEntity[]): Promise<number> {
   const allToSync = customEntities && customEntities.length > 0 ? customEntities : HEALTH_DATA;
-  const batch = writeBatch(db);
-  let count = 0;
+  let totalCommitted = 0;
 
-  for (const entity of allToSync) {
-    const docRef = doc(db, ENTITIES_COLLECTION, entity.id);
-    const payload: Record<string, any> = {
-      name: entity.name,
-      type: entity.type,
-      commune: entity.commune,
-      address: entity.address,
-      phone: entity.phone,
-      status: 'approved',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  // Chunk in batches of 400 (Firestore hard limit is 500 per batch)
+  const chunkSize = 400;
+  for (let i = 0; i < allToSync.length; i += chunkSize) {
+    const chunk = allToSync.slice(i, i + chunkSize);
+    const batch = writeBatch(db);
 
-    if (entity.specialty) payload.specialty = entity.specialty;
-    if (entity.secondaryPhone) payload.secondaryPhone = entity.secondaryPhone;
-    if (entity.garde_days && entity.garde_days.length > 0) payload.garde_days = entity.garde_days;
-    if (entity.garde_dates && entity.garde_dates.length > 0) payload.garde_dates = entity.garde_dates;
-    if (entity.garde_shift) payload.garde_shift = entity.garde_shift;
-    if (entity.latitude !== undefined) payload.latitude = Number(entity.latitude);
-    if (entity.longitude !== undefined) payload.longitude = Number(entity.longitude);
-    if (entity.workingHours) payload.workingHours = entity.workingHours;
-    if (entity.isEmergency !== undefined) payload.isEmergency = entity.isEmergency;
-    if (entity.notes) payload.notes = entity.notes;
+    for (const entity of chunk) {
+      const docRef = doc(db, ENTITIES_COLLECTION, entity.id);
+      const payload: Record<string, any> = {
+        name: entity.name,
+        type: entity.type,
+        commune: entity.commune,
+        address: entity.address,
+        phone: entity.phone,
+        status: entity.status || 'approved',
+        createdAt: entity.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    batch.set(docRef, payload);
-    count++;
+      if (entity.specialty) payload.specialty = entity.specialty;
+      if (entity.secondaryPhone) payload.secondaryPhone = entity.secondaryPhone;
+      if (entity.garde_days && entity.garde_days.length > 0) payload.garde_days = entity.garde_days;
+      if (entity.garde_dates && entity.garde_dates.length > 0) payload.garde_dates = entity.garde_dates;
+      if (entity.garde_shift) payload.garde_shift = entity.garde_shift;
+      if (entity.latitude !== undefined) payload.latitude = Number(entity.latitude);
+      if (entity.longitude !== undefined) payload.longitude = Number(entity.longitude);
+      if (entity.workingHours) payload.workingHours = entity.workingHours;
+      if (entity.isEmergency !== undefined) payload.isEmergency = entity.isEmergency;
+      if (entity.notes) payload.notes = entity.notes;
+
+      batch.set(docRef, payload, { merge: true });
+    }
+
+    try {
+      await batch.commit();
+      totalCommitted += chunk.length;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, ENTITIES_COLLECTION);
+    }
   }
 
-  try {
-    await batch.commit();
-    return count;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, ENTITIES_COLLECTION);
-    return 0;
-  }
+  return totalCommitted;
 }
 
 /**

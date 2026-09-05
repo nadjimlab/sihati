@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Clock, 
+import {
+  Clock,
   Info,
   ChevronLeft,
   ChevronRight,
@@ -15,21 +15,21 @@ import { DirectoryCard } from './DirectoryCard';
 import { AdvancedFilterBar } from './AdvancedFilterBar';
 import { NotificationModal } from './NotificationModal';
 import { AdvancedFilterState, INITIAL_FILTER_STATE, filterEntities } from '../utils/filterUtils';
-import { 
-  isNotificationSupported, 
-  isGardeNotificationEnabled, 
+import {
+  isNotificationSupported,
+  isGardeNotificationEnabled,
   setGardeNotificationPref,
 } from '../utils/notificationManager';
 
 interface GardeViewProps {
   pharmacies: HealthEntity[];
   onViewOnMap?: (entity: HealthEntity) => void;
-  onSuggestEdit?: (entity: HealthEntity) => void;
+  onShare?: (entity: HealthEntity) => void;
 }
 
-export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap, onSuggestEdit }) => {
+export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap, onShare }) => {
   const [filters, setFilters] = useState<AdvancedFilterState>(INITIAL_FILTER_STATE);
-  
+
   // Custom selected date in YYYY-MM-DD or null (defaults to today)
   const [customDateStr, setCustomDateStr] = useState<string>(() => {
     const d = new Date();
@@ -152,8 +152,8 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap, o
               id="garde-btn-today"
               onClick={handleSetToday}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                isToday 
-                  ? 'bg-emerald-600 text-white shadow-xs' 
+                isToday
+                  ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
               }`}
             >
@@ -271,7 +271,7 @@ export const GardeView: React.FC<GardeViewProps> = ({ pharmacies, onViewOnMap, o
               item={item}
               isOnDuty={true}
               onViewOnMap={onViewOnMap}
-              onSuggestEdit={onSuggestEdit}
+              onShare={onShare}
             />
           ))}
         </div>

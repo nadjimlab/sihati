@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { ActiveTab, HealthEntity, EditSuggestion } from './types';
+import { ActiveTab, HealthEntity } from './types';
 import { HEALTH_DATA } from './data/mockData';
 import { Header } from './components/Header';
 import { HomeView } from './components/HomeView';
@@ -11,20 +11,18 @@ import { DoctorsView } from './components/DoctorsView';
 import { HospitalsView } from './components/HospitalsView';
 import { EmergencyModal } from './components/EmergencyModal';
 import { AddEntityModal } from './components/AddEntityModal';
-import { SuggestEditModal } from './components/SuggestEditModal';
 import { InAppMapModal } from './components/InAppMapModal';
 import { MobileDrawer } from './components/MobileDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { ShareModal } from './components/ShareModal';
 import { HeartPulse, CheckCircle2, WifiOff } from 'lucide-react';
-
 import {
   subscribeToHealthEntities,
   addEntityToFirestore,
   updateEntityInFirestore,
-  deleteEntityFromFirestore,
-  submitEditSuggestionToFirestore
+  deleteEntityFromFirestore
 } from './services/firebaseService';
 import {
   loadCachedEntities,
@@ -36,18 +34,6 @@ import { swManager } from './utils/serviceWorkerRegistration';
 import { checkAndNotifyGardeChanges } from './utils/notificationManager';
 import { recordSiteVisit } from './utils/analyticsManager';
 
-// Keep the complete built-in directory visible even when Firestore still has an older partial snapshot.
-const mergeWithDefaultEntities = (firestoreEntities: HealthEntity[]): HealthEntity[] => {
-  const firestoreById = new Map(firestoreEntities.map((entity) => [entity.id, entity]));
-  const defaultsWithFirestoreOverrides = HEALTH_DATA.map((defaultEntity) =>
-    firestoreById.get(defaultEntity.id) ?? defaultEntity
-  );
-  const additionalFirestoreEntities = firestoreEntities.filter(
-    (entity) => !HEALTH_DATA.some((defaultEntity) => defaultEntity.id === entity.id)
-  );
-  return [...defaultsWithFirestoreOverrides, ...additionalFirestoreEntities];
-};
-
 // Inner component to encapsulate routing & state
 function AppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
@@ -58,11 +44,21 @@ function AppContent() {
   }, [activeTab]);
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isSuggestEditModalOpen, setIsSuggestEditModalOpen] = useState(false);
-  const [suggestEditEntity, setSuggestEditEntity] = useState<HealthEntity | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareEntity, setShareEntity] = useState<HealthEntity | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleOpenShareEntity = (entity: HealthEntity) => {
+    setShareEntity(entity);
+    setIsShareModalOpen(true);
+  };
+
+  const handleOpenShareApp = () => {
+    setShareEntity(null);
+    setIsShareModalOpen(true);
+  };
   const [isFirebaseSynced, setIsFirebaseSynced] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(() => swManager.getOnlineStatus());
 
@@ -107,9 +103,8 @@ function AppContent() {
     const unsubscribe = subscribeToHealthEntities(
       (firestoreEntities) => {
         if (firestoreEntities && firestoreEntities.length > 0) {
-          const mergedEntities = mergeWithDefaultEntities(firestoreEntities);
-          setEntities(mergedEntities);
-          saveCachedEntities(mergedEntities);
+          setEntities(firestoreEntities);
+          saveCachedEntities(firestoreEntities);
           setIsFirebaseSynced(true);
 
           // Check if today's on-duty pharmacies changed and alert user if subscribed
@@ -233,22 +228,6 @@ function AppContent() {
     setIsInAppMapOpen(false);
   };
 
-  const handleOpenSuggestEditModal = (entity: HealthEntity) => {
-    setSuggestEditEntity(entity);
-    setIsSuggestEditModalOpen(true);
-  };
-
-  const handleSubmitEditSuggestion = (suggestion: EditSuggestion) => {
-    submitEditSuggestionToFirestore(suggestion).catch((err) => {
-      console.warn('Failed to sync edit suggestion to Firestore:', err);
-    });
-
-    setToastMessage('شكراً لك! تم إرسال اقتراح التعديل وسيتم مراجعته من قبل المشرف قبل نشره.');
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
-  };
-
   // Only approved entities are visible to the public site
   const approvedEntities = useMemo(
     () => entities.filter((item) => item.status !== 'pending'),
@@ -262,7 +241,7 @@ function AppContent() {
   );
 
   const doctors = useMemo(
-    () => approvedEntities.filter((item) => item.type === 'طبيب'),
+    () => approvedEntities.filter((item) => item.type === 'طبيب' || (item.type === 'عيادة' && !!item.specialty)),
     [approvedEntities]
   );
 
@@ -332,6 +311,7 @@ function AppContent() {
               onOpenAddModal={() => setIsAddModalOpen(true)}
               onOpenDrawer={() => setIsDrawerOpen(true)}
               onOpenInstallModal={() => setIsInstallModalOpen(true)}
+              onOpenShare={handleOpenShareApp}
               onDutyCountToday={todayOnDutyPharmacies.length}
             />
 
@@ -352,6 +332,7 @@ function AppContent() {
               onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
               onOpenAddModal={() => setIsAddModalOpen(true)}
               onOpenInstallModal={() => setIsInstallModalOpen(true)}
+              onOpenShare={handleOpenShareApp}
               onDutyCountToday={todayOnDutyPharmacies.length}
             />
 
@@ -366,7 +347,8 @@ function AppContent() {
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onOpenInstallModal={() => setIsInstallModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
-                  onSuggestEdit={handleOpenSuggestEditModal}
+                  onShare={handleOpenShareEntity}
+                  onShareApp={handleOpenShareApp}
                 />
               )}
 
@@ -385,7 +367,7 @@ function AppContent() {
                   todayOnDutyIds={todayOnDutyIds}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
-                  onSuggestEdit={handleOpenSuggestEditModal}
+                  onShare={handleOpenShareEntity}
                 />
               )}
 
@@ -393,7 +375,7 @@ function AppContent() {
                 <GardeView
                   pharmacies={pharmacies}
                   onViewOnMap={handleViewOnMap}
-                  onSuggestEdit={handleOpenSuggestEditModal}
+                  onShare={handleOpenShareEntity}
                 />
               )}
 
@@ -402,7 +384,7 @@ function AppContent() {
                   doctors={doctors}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
-                  onSuggestEdit={handleOpenSuggestEditModal}
+                  onShare={handleOpenShareEntity}
                 />
               )}
 
@@ -411,7 +393,7 @@ function AppContent() {
                   facilities={facilities}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   onViewOnMap={handleViewOnMap}
-                  onSuggestEdit={handleOpenSuggestEditModal}
+                  onShare={handleOpenShareEntity}
                 />
               )}
             </main>
@@ -423,6 +405,14 @@ function AppContent() {
               onClose={() => setIsInAppMapOpen(false)}
               onOpenFullMap={handleOpenFullMapFromModal}
               isOnDuty={inAppMapEntity ? todayOnDutyIds.includes(inAppMapEntity.id) : false}
+              onShare={handleOpenShareEntity}
+            />
+
+            {/* Social Share & Broadcast Modal (واتساب، فيسبوك، إنستغرام، وغيرها) */}
+            <ShareModal
+              isOpen={isShareModalOpen}
+              onClose={() => setIsShareModalOpen(false)}
+              entity={shareEntity}
             />
 
             {/* Add Entity Modal */}
@@ -430,14 +420,6 @@ function AppContent() {
               isOpen={isAddModalOpen}
               onClose={() => setIsAddModalOpen(false)}
               onAddEntity={handleAddEntity}
-            />
-
-            {/* Suggest Edit Modal */}
-            <SuggestEditModal
-              isOpen={isSuggestEditModalOpen}
-              entity={suggestEditEntity}
-              onClose={() => setIsSuggestEditModalOpen(false)}
-              onSubmitSuggestion={handleSubmitEditSuggestion}
             />
 
             {/* Emergency Modal */}
@@ -506,6 +488,10 @@ function AppContent() {
                   <span className="text-slate-300">•</span>
                   <button onClick={() => setIsInstallModalOpen(true)} className="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
                     📱 تثبيت على الهاتف
+                  </button>
+                  <span className="text-slate-300">•</span>
+                  <button onClick={handleOpenShareApp} className="text-blue-700 hover:text-blue-800 font-bold transition-colors">
+                    📢 نشر ومشاركة التطبيق
                   </button>
                   <span className="text-slate-300">•</span>
                   <button onClick={() => setIsAddModalOpen(true)} className="text-blue-700 hover:text-blue-800 font-bold transition-colors">

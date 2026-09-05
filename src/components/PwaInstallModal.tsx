@@ -1,13 +1,13 @@
 import React from 'react';
-import { 
-  X, 
-  Smartphone, 
-  PlusSquare, 
-  Share2, 
-  MoreVertical, 
-  Compass, 
-  CheckCircle2, 
-  HeartPulse, 
+import {
+  X,
+  Smartphone,
+  PlusSquare,
+  Share2,
+  MoreVertical,
+  Compass,
+  CheckCircle2,
+  HeartPulse,
   Download,
   ArrowRight
 } from 'lucide-react';
@@ -43,7 +43,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs font-['Tajawal'] dir-rtl">
-      <div 
+      <div
         className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-right flex flex-col"
         role="dialog"
         aria-modal="true"
@@ -107,7 +107,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
                 <Compass className="w-4 h-4 text-blue-600" />
                 <span>خطوات التثبيت على أجهزة iPhone / iPad (متصفح Safari):</span>
               </p>
-              
+
               <ol className="space-y-2.5 list-decimal list-inside pr-1">
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-blue-600">1.</span>
@@ -129,7 +129,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
                 <Smartphone className="w-4 h-4 text-blue-600" />
                 <span>طريقة التثبيت السريعة على أجهزة Android و Chrome:</span>
               </p>
-              
+
               <ol className="space-y-2.5 pr-1">
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-blue-600">1.</span>
